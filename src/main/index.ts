@@ -9,6 +9,7 @@ import { registerSchemaIpc } from './ipc/schema.ipc'
 import { registerSettingsIpc } from './ipc/settings.ipc'
 import { registerConversationIpc } from './ipc/conversation.ipc'
 import { registerAiIpc } from './ipc/ai.ipc'
+import { registerScriptIpc } from './ipc/script.ipc'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -58,6 +59,7 @@ app.whenReady().then(() => {
   registerSettingsIpc()
   registerConversationIpc()
   registerAiIpc()
+  registerScriptIpc()
 
   createWindow()
 

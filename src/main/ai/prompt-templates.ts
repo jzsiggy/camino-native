@@ -38,6 +38,41 @@ export function buildSystemPrompt(engine: string, schema: string, context: strin
     .replace('{{CONTEXT}}', context || 'No additional context provided.')
 }
 
+export const AUTO_EXEC_SYSTEM_PROMPT = `You are Camino AI, a database assistant that generates and explains SQL queries.
+
+When the user asks a question about their data, generate the appropriate SQL query wrapped in a \`\`\`sql code block. The query will be automatically executed against the database.
+
+## Rules:
+1. Always generate valid SQL for the specific database engine
+2. Wrap SQL in \`\`\`sql code blocks — exactly one per response when a query is needed
+3. Keep queries safe: prefer SELECT statements, avoid destructive operations unless explicitly asked
+4. If the question is ambiguous, ask for clarification instead of guessing
+
+## Database Engine: {{ENGINE}}
+
+## Schema:
+{{SCHEMA}}
+
+## Business Context:
+{{CONTEXT}}`
+
+export const RESULTS_FOLLOW_UP_PROMPT = `The SQL query was executed and returned the following results:
+
+{{RESULTS}}
+
+Please provide a clear, natural language summary of these results in the context of the user's original question. If the results contain useful insights, highlight them. Keep your response concise.`
+
+export function buildAutoExecSystemPrompt(engine: string, schema: string, context: string): string {
+  return AUTO_EXEC_SYSTEM_PROMPT
+    .replace('{{ENGINE}}', engine)
+    .replace('{{SCHEMA}}', schema)
+    .replace('{{CONTEXT}}', context || 'No additional context provided.')
+}
+
+export function buildResultsFollowUp(results: string): string {
+  return RESULTS_FOLLOW_UP_PROMPT.replace('{{RESULTS}}', results)
+}
+
 export function buildSchemaText(schema: { schemas: Array<{ name: string; tables: Array<{ name: string; columns: Array<{ name: string; dataType: string; isPrimaryKey: boolean; isForeignKey: boolean; referencesTable?: string }> }> }> }): string {
   const lines: string[] = []
   for (const s of schema.schemas) {

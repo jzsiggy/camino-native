@@ -3,6 +3,7 @@ import type { ConnectionConfig, ConnectionCreateInput, ConnectionUpdateInput, Co
 import type { QueryRequest, QueryResult } from '@shared/types/query'
 import type { DatabaseSchema, ColumnDetail } from '@shared/types/schema'
 import type { Conversation, ChatMessage, AiConnectionContext, AiStreamChunk, WizardQuestion } from '@shared/types/ai'
+import type { Script } from '@shared/types/script'
 
 function invoke<T>(channel: string, ...args: unknown[]): Promise<T> {
   return window.api.invoke(channel, ...args) as Promise<T>
@@ -51,6 +52,15 @@ export const aiApi = {
   getContext: (connectionId: string) => invoke<AiConnectionContext[]>(IPC.AI_CONTEXT_GET, connectionId),
   updateContext: (contextId: string, content: string) => invoke<{ success: boolean }>(IPC.AI_CONTEXT_UPDATE, contextId, content),
   deleteContext: (contextId: string) => invoke<{ success: boolean }>(IPC.AI_CONTEXT_DELETE, contextId)
+}
+
+// Script API
+export const scriptApi = {
+  list: (connectionId: string) => invoke<Script[]>(IPC.SCRIPT_LIST, connectionId),
+  get: (id: string) => invoke<Script | null>(IPC.SCRIPT_GET, id),
+  create: (connectionId: string, title?: string) => invoke<Script>(IPC.SCRIPT_CREATE, connectionId, title),
+  update: (id: string, updates: { title?: string; content?: string }) => invoke<{ success: boolean }>(IPC.SCRIPT_UPDATE, id, updates),
+  delete: (id: string) => invoke<{ success: boolean }>(IPC.SCRIPT_DELETE, id)
 }
 
 // Conversation API

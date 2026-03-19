@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { aiApi, conversationApi } from '../lib/ipc-client'
 import { useAiStore } from '../stores/ai.store'
@@ -61,22 +61,27 @@ export function useSendMessage() {
 }
 
 export function useAiStream() {
-  const { appendStreamingContent, setIsStreaming, clearStreamingContent } = useAiStore()
+  const { appendStreamingContent, setIsStreaming, clearStreamingContent, setIsExecutingQuery } = useAiStore()
 
   useEffect(() => {
     const unsubStream = aiApi.onStream((chunk: unknown) => {
       const data = chunk as AiStreamChunk
       if (data.type === 'text') {
+        setIsExecutingQuery(false)
         appendStreamingContent(data.content)
+      } else if (data.type === 'sql_executing') {
+        setIsExecutingQuery(true)
       }
     })
 
     const unsubEnd = aiApi.onStreamEnd(() => {
       setIsStreaming(false)
+      setIsExecutingQuery(false)
     })
 
     const unsubError = aiApi.onStreamError(() => {
       setIsStreaming(false)
+      setIsExecutingQuery(false)
       clearStreamingContent()
     })
 
@@ -85,7 +90,7 @@ export function useAiStream() {
       unsubEnd()
       unsubError()
     }
-  }, [appendStreamingContent, setIsStreaming, clearStreamingContent])
+  }, [appendStreamingContent, setIsStreaming, clearStreamingContent, setIsExecutingQuery])
 }
 
 export function useAiContext(connectionId: string | null) {

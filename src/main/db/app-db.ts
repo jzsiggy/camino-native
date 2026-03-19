@@ -70,6 +70,21 @@ const MIGRATIONS: { name: string; sql: string }[] = [
         cached_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
     `
+  },
+  {
+    name: '003_scripts.sql',
+    sql: `
+      CREATE TABLE IF NOT EXISTS scripts (
+        id TEXT PRIMARY KEY,
+        connection_id TEXT REFERENCES connections(id) ON DELETE CASCADE,
+        title TEXT NOT NULL DEFAULT 'Untitled',
+        content TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      ALTER TABLE messages ADD COLUMN sql_results TEXT;
+    `
   }
 ]
 

@@ -3,6 +3,19 @@ import { v4 as uuid } from 'uuid'
 import { IPC } from '@shared/constants/ipc-channels'
 import { getAppDb } from '../db/app-db'
 
+function mapMessage(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    role: row.role,
+    content: row.content,
+    sqlGenerated: row.sql_generated || undefined,
+    sqlResults: row.sql_results || undefined,
+    tokenCount: row.token_count || undefined,
+    createdAt: row.created_at
+  }
+}
+
 export function registerConversationIpc(): void {
   ipcMain.handle(IPC.CONVERSATION_LIST, (_event, connectionId: string) => {
     const db = getAppDb()
@@ -35,8 +48,9 @@ export function registerConversationIpc(): void {
 
   ipcMain.handle(IPC.CONVERSATION_MESSAGES, (_event, conversationId: string) => {
     const db = getAppDb()
-    return db
+    const rows = db
       .prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC')
-      .all(conversationId)
+      .all(conversationId) as Record<string, unknown>[]
+    return rows.map(mapMessage)
   })
 }

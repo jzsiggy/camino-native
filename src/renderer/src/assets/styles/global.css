@@ -110,6 +110,41 @@ body.bp5-dark {
   padding: 4px 0;
 }
 
+/* Sidebar section label */
+.sidebar-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 2px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+/* Sidebar items */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px 4px 20px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.sidebar-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.sidebar-item.selected {
+  background: rgba(137, 180, 250, 0.1);
+  color: var(--accent);
+}
+
 /* Connection tree */
 .connection-tree-item {
   display: flex;
@@ -414,6 +449,80 @@ body.bp5-dark {
 /* Allotment overrides */
 .split-view-container {
   height: 100%;
+}
+
+/* Script view */
+.script-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.script-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-color);
+  min-height: 40px;
+  gap: 12px;
+}
+
+.script-title-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 4px 0;
+  outline: none;
+}
+
+.script-title-input:focus {
+  border-bottom: 1px solid var(--accent);
+}
+
+/* Conversation view */
+.conversation-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--panel-bg);
+}
+
+/* SQL collapsible */
+.sql-collapsible {
+  margin: 8px 0;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sql-collapsible summary {
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.02);
+  user-select: none;
+}
+
+.sql-collapsible summary:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.sql-collapsible pre {
+  margin: 0;
+  border-radius: 0;
+}
+
+/* Inline results */
+.inline-results {
+  max-height: 200px;
+  overflow: auto;
+  font-size: 11px;
 }
 
 /* Light theme overrides */

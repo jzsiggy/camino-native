@@ -32,6 +32,13 @@ export const IPC = {
   AI_CONTEXT_UPDATE: 'ai:context-update',
   AI_CONTEXT_DELETE: 'ai:context-delete',
 
+  // Scripts
+  SCRIPT_LIST: 'script:list',
+  SCRIPT_GET: 'script:get',
+  SCRIPT_CREATE: 'script:create',
+  SCRIPT_UPDATE: 'script:update',
+  SCRIPT_DELETE: 'script:delete',
+
   // Conversations
   CONVERSATION_LIST: 'conversation:list',
   CONVERSATION_GET: 'conversation:get',

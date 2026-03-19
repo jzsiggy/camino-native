@@ -6,14 +6,9 @@ import { SettingsDialog } from './components/settings/SettingsDialog'
 import { AiSetupWizard } from './components/ai/AiSetupWizard'
 import { AiContextViewer } from './components/ai/AiContextViewer'
 import { useAppStore } from './stores/app.store'
-import { useEditorStore } from './stores/editor.store'
-import { useExecuteQuery } from './hooks/useQuery'
-import { v4 as uuid } from 'uuid'
 
 const App: React.FC = () => {
-  const { theme, activeConnectionId } = useAppStore()
-  const { activeTabId, tabs, openTab } = useEditorStore()
-  const { execute } = useExecuteQuery()
+  const { theme } = useAppStore()
 
   // Apply theme class
   useEffect(() => {
@@ -24,33 +19,6 @@ const App: React.FC = () => {
       document.body.classList.remove('light-theme')
     }
   }, [theme])
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey
-
-      // Cmd+T: New tab
-      if (mod && e.key === 't') {
-        e.preventDefault()
-        if (activeConnectionId) {
-          openTab({
-            id: uuid(),
-            title: `Query ${tabs.length + 1}`,
-            connectionId: activeConnectionId,
-            content: '',
-            isDirty: false,
-            isExecuting: false
-          })
-        }
-      }
-
-      // Cmd+Enter is handled by Monaco
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeConnectionId, tabs.length, openTab])
 
   return (
     <>

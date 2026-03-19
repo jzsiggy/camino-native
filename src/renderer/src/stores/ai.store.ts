@@ -13,6 +13,9 @@ export interface AiState {
   isStreaming: boolean
   setIsStreaming: (streaming: boolean) => void
 
+  isExecutingQuery: boolean
+  setIsExecutingQuery: (executing: boolean) => void
+
   wizardOpen: boolean
   setWizardOpen: (open: boolean) => void
 
@@ -32,6 +35,9 @@ export const useAiStore = create<AiState>((set) => ({
 
   isStreaming: false,
   setIsStreaming: (streaming) => set({ isStreaming: streaming }),
+
+  isExecutingQuery: false,
+  setIsExecutingQuery: (executing) => set({ isExecutingQuery: executing }),
 
   wizardOpen: false,
   setWizardOpen: (open) => set({ wizardOpen: open }),

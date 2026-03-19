@@ -31,9 +31,10 @@ export interface AppState {
   connectionSettingsId: string | null
   setConnectionSettingsId: (id: string | null) => void
 
-  // Right panel
-  rightPanel: 'results' | 'ai'
-  setRightPanel: (panel: 'results' | 'ai') => void
+  // Active item selection
+  activeItemType: 'script' | 'conversation' | null
+  activeScriptId: string | null
+  selectItem: (type: 'script' | 'conversation' | null, id: string | null) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -67,6 +68,16 @@ export const useAppStore = create<AppState>((set) => ({
   connectionSettingsId: null,
   setConnectionSettingsId: (id) => set({ connectionSettingsId: id }),
 
-  rightPanel: 'results',
-  setRightPanel: (panel) => set({ rightPanel: panel })
+  activeItemType: null,
+  activeScriptId: null,
+  selectItem: (type, id) => {
+    if (type === 'script') {
+      set({ activeItemType: 'script', activeScriptId: id })
+    } else if (type === 'conversation') {
+      set({ activeItemType: 'conversation', activeScriptId: null })
+      // activeConversationId is managed in ai.store
+    } else {
+      set({ activeItemType: null, activeScriptId: null })
+    }
+  }
 }))

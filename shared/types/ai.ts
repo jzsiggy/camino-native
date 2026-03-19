@@ -14,6 +14,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   sqlGenerated?: string
+  sqlResults?: string
   tokenCount?: number
   createdAt: string
 }
@@ -45,7 +46,7 @@ export interface AiConnectionContext {
 }
 
 export interface AiStreamChunk {
-  type: 'text' | 'done' | 'error'
+  type: 'text' | 'done' | 'error' | 'sql_executing'
   content: string
   messageId?: string
 }

@@ -6,7 +6,7 @@ import { decryptString } from '../security/crypto'
 import { AnthropicProvider } from '../ai/anthropic.provider'
 import { OpenAIProvider } from '../ai/openai.provider'
 import type { AiProviderInterface, AiProviderMessage } from '../ai/provider.interface'
-import { buildSystemPrompt, buildSchemaText, WIZARD_SYSTEM_PROMPT } from '../ai/prompt-templates'
+import { buildSystemPrompt, buildSchemaText, buildAutoExecSystemPrompt, buildResultsFollowUp, WIZARD_SYSTEM_PROMPT } from '../ai/prompt-templates'
 import {
   getConnectionContext,
   getCachedSchema,
@@ -78,7 +78,7 @@ export function registerAiIpc(): void {
     const schemaText = schema ? buildSchemaText(schema) : 'No schema loaded. Run schema introspection first.'
     const contexts = getConnectionContext(connectionId)
     const contextText = buildContextString(contexts)
-    const systemPrompt = buildSystemPrompt(connection.engine, schemaText, contextText)
+    const systemPrompt = buildAutoExecSystemPrompt(connection.engine, schemaText, contextText)
 
     // Load conversation history
     const history = db
@@ -93,9 +93,11 @@ export function registerAiIpc(): void {
     // Get AI provider
     const { provider, model, maxTokens, temperature } = getProvider()
 
-    // Stream response
+    // Stream response — Pass 1: AI generates SQL
     const assistantMsgId = uuid()
     let fullResponse = ''
+    let sqlGenerated: string | null = null
+    let sqlResults: string | null = null
 
     try {
       fullResponse = await provider.chat(
@@ -106,13 +108,58 @@ export function registerAiIpc(): void {
         }
       )
 
-      // Save assistant message
+      // Extract SQL from response
       const sqlMatch = fullResponse.match(/```sql\n([\s\S]*?)```/)
-      const sqlGenerated = sqlMatch ? sqlMatch[1].trim() : null
+      sqlGenerated = sqlMatch ? sqlMatch[1].trim() : null
 
+      // Pass 2: Auto-execute SQL and feed results back to AI
+      if (sqlGenerated) {
+        const adapter = poolManager.getAdapter(connectionId)
+        if (adapter) {
+          // Notify frontend that query is executing
+          window.webContents.send(IPC.AI_CHAT_STREAM, { type: 'sql_executing', content: sqlGenerated, messageId: assistantMsgId })
+
+          try {
+            const queryResult = await adapter.execute(sqlGenerated)
+            // Format results for AI
+            const resultRows = queryResult.rows.slice(0, 50)
+            const resultsText = queryResult.error
+              ? `Error: ${queryResult.error}`
+              : `${queryResult.rowCount} rows returned.\nColumns: ${queryResult.columns.map((c) => c.name).join(', ')}\n\nData:\n${JSON.stringify(resultRows, null, 2)}`
+
+            sqlResults = resultsText
+
+            // Pass 2: Feed results to AI for natural language summary
+            const pass2Messages: AiProviderMessage[] = [
+              ...messages,
+              { role: 'assistant', content: fullResponse },
+              { role: 'user', content: buildResultsFollowUp(resultsText) }
+            ]
+
+            let pass2Response = ''
+            pass2Response = await provider.chat(
+              pass2Messages,
+              { model, maxTokens, temperature, systemPrompt },
+              (chunk) => {
+                window.webContents.send(IPC.AI_CHAT_STREAM, { type: 'text', content: chunk, messageId: assistantMsgId })
+              }
+            )
+
+            // Append pass 2 response to full response
+            fullResponse = fullResponse + '\n\n' + pass2Response
+          } catch (execErr) {
+            const errorText = `\n\nQuery execution failed: ${(execErr as Error).message}`
+            fullResponse = fullResponse + errorText
+            sqlResults = `Error: ${(execErr as Error).message}`
+            window.webContents.send(IPC.AI_CHAT_STREAM, { type: 'text', content: errorText, messageId: assistantMsgId })
+          }
+        }
+      }
+
+      // Save assistant message
       db.prepare(
-        'INSERT INTO messages (id, conversation_id, role, content, sql_generated, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-      ).run(assistantMsgId, conversationId, 'assistant', fullResponse, sqlGenerated, new Date().toISOString())
+        'INSERT INTO messages (id, conversation_id, role, content, sql_generated, sql_results, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      ).run(assistantMsgId, conversationId, 'assistant', fullResponse, sqlGenerated, sqlResults, new Date().toISOString())
 
       // Parse and save context updates
       const updates = parseContextUpdates(fullResponse)
@@ -130,7 +177,7 @@ export function registerAiIpc(): void {
         messageId: assistantMsgId
       })
 
-      return { messageId: assistantMsgId, content: fullResponse, sqlGenerated }
+      return { messageId: assistantMsgId, content: fullResponse, sqlGenerated, sqlResults }
     } catch (err) {
       window.webContents.send(IPC.AI_CHAT_STREAM_ERROR, {
         type: 'error',
