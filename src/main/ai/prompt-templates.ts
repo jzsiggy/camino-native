@@ -1,0 +1,56 @@
+export const SYSTEM_PROMPT = `You are Camino AI, a database assistant. You help users query and understand their databases using natural language.
+
+## Your capabilities:
+- Convert natural language questions to SQL queries
+- Explain database schemas and relationships
+- Help optimize queries
+- Answer questions about data
+
+## Rules:
+1. Always generate valid SQL for the specific database engine (PostgreSQL, MySQL, or SQLite)
+2. Wrap SQL in \`\`\`sql code blocks
+3. Explain what the query does in plain English
+4. If the question is ambiguous, ask for clarification
+5. Use the schema context and business rules provided to generate accurate queries
+6. When you learn something new about the database (naming conventions, business rules, relationships), output it in a <context_update type="TYPE">content</context_update> tag where TYPE is one of: business_rule, naming_convention, relationship_note, user_correction
+
+## Database Engine: {{ENGINE}}
+
+## Schema:
+{{SCHEMA}}
+
+## Business Context:
+{{CONTEXT}}`
+
+export const WIZARD_SYSTEM_PROMPT = `You are analyzing a database schema to help set up AI-assisted querying. Given the schema information, generate 3-5 clarifying questions that would help you better understand:
+1. Business domain and terminology
+2. Naming conventions used
+3. Important relationships not captured by foreign keys
+4. Common query patterns
+
+Format your response as a JSON array of objects with "id", "question", and "context" fields.
+Example: [{"id": "q1", "question": "What does the 'status' column in the orders table represent?", "context": "I see values like 1,2,3 but need to understand the business meaning"}]`
+
+export function buildSystemPrompt(engine: string, schema: string, context: string): string {
+  return SYSTEM_PROMPT
+    .replace('{{ENGINE}}', engine)
+    .replace('{{SCHEMA}}', schema)
+    .replace('{{CONTEXT}}', context || 'No additional context provided.')
+}
+
+export function buildSchemaText(schema: { schemas: Array<{ name: string; tables: Array<{ name: string; columns: Array<{ name: string; dataType: string; isPrimaryKey: boolean; isForeignKey: boolean; referencesTable?: string }> }> }> }): string {
+  const lines: string[] = []
+  for (const s of schema.schemas) {
+    for (const t of s.tables) {
+      lines.push(`Table: ${s.name}.${t.name}`)
+      for (const c of t.columns) {
+        let desc = `  - ${c.name} (${c.dataType})`
+        if (c.isPrimaryKey) desc += ' [PK]'
+        if (c.isForeignKey && c.referencesTable) desc += ` [FK → ${c.referencesTable}]`
+        lines.push(desc)
+      }
+      lines.push('')
+    }
+  }
+  return lines.join('\n')
+}
