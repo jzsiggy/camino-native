@@ -383,11 +383,17 @@ body.bp5-dark {
   color: var(--text-primary);
 }
 
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .ai-message pre {
   background: var(--sidebar-bg);
   border-radius: 6px;
   padding: 8px 12px;
-  margin: 8px 0;
+  margin: 0;
   overflow-x: auto;
   font-size: 12px;
 }
@@ -494,7 +500,7 @@ body.bp5-dark {
 
 /* SQL collapsible */
 .sql-collapsible {
-  margin: 8px 0;
+  margin: 0;
   border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
@@ -518,7 +524,23 @@ body.bp5-dark {
   border-radius: 0;
 }
 
+/* Chart container */
+.chart-container {
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.inline-table-scroll {
+  max-height: 200px;
+  overflow: auto;
+}
+
 /* Inline results */
+.inline-results-wrapper {
+  overflow: hidden;
+}
+
 .inline-results {
   max-height: 200px;
   overflow: auto;

@@ -60,7 +60,19 @@ export const RESULTS_FOLLOW_UP_PROMPT = `The SQL query was executed and returned
 
 {{RESULTS}}
 
-Please provide a clear, natural language summary of these results in the context of the user's original question. If the results contain useful insights, highlight them. Keep your response concise.`
+Please provide a clear, natural language summary of these results in the context of the user's original question. If the results contain useful insights, highlight them. Keep your response concise.
+
+After your summary, if the data is suitable for visualization, include a chart configuration block in the following format:
+
+\`\`\`chart
+{
+  "type": "bar" | "line" | "pie",
+  "labelColumn": "column_name",
+  "valueColumns": ["column_name"]
+}
+\`\`\`
+
+Only include this block if a chart would genuinely help visualize the data. Do not include it for single-row results, error results, or data that doesn't lend itself to charting.`
 
 export function buildAutoExecSystemPrompt(engine: string, schema: string, context: string): string {
   return AUTO_EXEC_SYSTEM_PROMPT

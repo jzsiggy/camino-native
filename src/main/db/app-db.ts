@@ -85,6 +85,12 @@ const MIGRATIONS: { name: string; sql: string }[] = [
 
       ALTER TABLE messages ADD COLUMN sql_results TEXT;
     `
+  },
+  {
+    name: '004_chart_config.sql',
+    sql: `
+      ALTER TABLE messages ADD COLUMN chart_config TEXT;
+    `
   }
 ]
 

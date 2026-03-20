@@ -4,6 +4,7 @@ import { useAppStore } from '../../stores/app.store'
 import { useAiStore } from '../../stores/ai.store'
 import { useConversationMessages, useSendMessage, useAiStream } from '../../hooks/useAiChat'
 import type { ChatMessage } from '@shared/types/ai'
+import { ResultsChart } from './ResultsChart'
 
 export const ConversationView: React.FC = () => {
   const { activeConnectionId } = useAppStore()
@@ -82,41 +83,90 @@ export const ConversationView: React.FC = () => {
   )
 }
 
+const ResultsContent: React.FC<{ sqlResults: string }> = ({ sqlResults }) => {
+  try {
+    const parsed = JSON.parse(sqlResults)
+    if (parsed.error) {
+      return <pre className="inline-results"><code>Error: {parsed.error}</code></pre>
+    }
+    if (parsed.columns && parsed.rows) {
+      return (
+        <div className="inline-results-wrapper">
+          <div className="inline-table-scroll">
+            <table className="results-table">
+              <thead>
+                <tr>
+                  {parsed.columns.map((col: string) => (
+                    <th key={col}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {parsed.rows.map((row: Record<string, unknown>, i: number) => (
+                  <tr key={i}>
+                    {parsed.columns.map((col: string) => (
+                      <td key={col}>{row[col] == null ? 'NULL' : String(row[col])}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )
+    }
+  } catch {
+    // parse failed — fallback
+  }
+  return <pre className="inline-results"><code>{sqlResults}</code></pre>
+}
+
+function parseChartConfig(sqlResults?: string, chartConfig?: string): React.ReactNode {
+  if (!chartConfig || !sqlResults) return null
+  try {
+    const config = JSON.parse(chartConfig)
+    const parsed = JSON.parse(sqlResults)
+    if (config.type && config.labelColumn && config.valueColumns && parsed.rows) {
+      return <ResultsChart config={config} rows={parsed.rows} />
+    }
+  } catch {
+    // invalid — skip
+  }
+  return null
+}
+
 const ConversationMessage: React.FC<{ message: ChatMessage }> = ({ message }) => {
   return (
     <div className={`ai-message ${message.role}`}>
-      <MessageContent content={message.content} sqlGenerated={message.sqlGenerated} sqlResults={message.sqlResults} />
+      <MessageContent content={message.content} sqlGenerated={message.sqlGenerated} sqlResults={message.sqlResults} chartConfig={message.chartConfig} />
     </div>
   )
 }
 
-const MessageContent: React.FC<{ content: string; sqlGenerated?: string; sqlResults?: string }> = ({ content, sqlGenerated, sqlResults }) => {
+const MessageContent: React.FC<{ content: string; sqlGenerated?: string; sqlResults?: string; chartConfig?: string }> = ({ content, sqlGenerated, sqlResults, chartConfig }) => {
   // Parse content: split by code blocks
   const parts = content.split(/(```sql\n[\s\S]*?```|```\n[\s\S]*?```)/g)
 
   return (
-    <div>
+    <div className="message-content">
       {parts.map((part, i) => {
         const sqlMatch = part.match(/```sql\n([\s\S]*?)```/)
         if (sqlMatch) {
           const sql = sqlMatch[1].trim()
-          return (
-            <details key={i} className="sql-collapsible">
-              <summary>View SQL query</summary>
-              <pre><code>{sql}</code></pre>
-            </details>
-          )
+          return <pre key={i}><code>{sql}</code></pre>
         }
         const codeMatch = part.match(/```\n([\s\S]*?)```/)
         if (codeMatch) {
           return <pre key={i}><code>{codeMatch[1].trim()}</code></pre>
         }
-        return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part}</span>
+        if (part.trim() === '') return null
+        return <span key={i}>{part}</span>
       })}
+      {parseChartConfig(sqlResults, chartConfig)}
       {sqlResults && (
         <details className="sql-collapsible">
           <summary>View query results</summary>
-          <pre className="inline-results"><code>{sqlResults}</code></pre>
+          <ResultsContent sqlResults={sqlResults} />
         </details>
       )}
     </div>

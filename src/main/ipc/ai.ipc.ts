@@ -98,6 +98,7 @@ export function registerAiIpc(): void {
     let fullResponse = ''
     let sqlGenerated: string | null = null
     let sqlResults: string | null = null
+    let chartConfig: string | null = null
 
     try {
       fullResponse = await provider.chat(
@@ -127,7 +128,7 @@ export function registerAiIpc(): void {
               ? `Error: ${queryResult.error}`
               : `${queryResult.rowCount} rows returned.\nColumns: ${queryResult.columns.map((c) => c.name).join(', ')}\n\nData:\n${JSON.stringify(resultRows, null, 2)}`
 
-            sqlResults = resultsText
+            sqlResults = JSON.stringify({ columns: queryResult.columns.map(c => c.name), rows: resultRows })
 
             // Pass 2: Feed results to AI for natural language summary
             const pass2Messages: AiProviderMessage[] = [
@@ -145,12 +146,24 @@ export function registerAiIpc(): void {
               }
             )
 
+            // Extract chart config from pass 2 response
+            const chartMatch = pass2Response.match(/```chart\n([\s\S]*?)```/)
+            if (chartMatch) {
+              try {
+                JSON.parse(chartMatch[1].trim())
+                chartConfig = chartMatch[1].trim()
+              } catch {
+                // Invalid JSON — ignore chart config
+              }
+              pass2Response = pass2Response.replace(/```chart\n[\s\S]*?```/, '').trim()
+            }
+
             // Append pass 2 response to full response
             fullResponse = fullResponse + '\n\n' + pass2Response
           } catch (execErr) {
             const errorText = `\n\nQuery execution failed: ${(execErr as Error).message}`
             fullResponse = fullResponse + errorText
-            sqlResults = `Error: ${(execErr as Error).message}`
+            sqlResults = JSON.stringify({ error: (execErr as Error).message })
             window.webContents.send(IPC.AI_CHAT_STREAM, { type: 'text', content: errorText, messageId: assistantMsgId })
           }
         }
@@ -158,8 +171,8 @@ export function registerAiIpc(): void {
 
       // Save assistant message
       db.prepare(
-        'INSERT INTO messages (id, conversation_id, role, content, sql_generated, sql_results, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(assistantMsgId, conversationId, 'assistant', fullResponse, sqlGenerated, sqlResults, new Date().toISOString())
+        'INSERT INTO messages (id, conversation_id, role, content, sql_generated, sql_results, chart_config, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(assistantMsgId, conversationId, 'assistant', fullResponse, sqlGenerated, sqlResults, chartConfig, new Date().toISOString())
 
       // Parse and save context updates
       const updates = parseContextUpdates(fullResponse)
@@ -177,7 +190,7 @@ export function registerAiIpc(): void {
         messageId: assistantMsgId
       })
 
-      return { messageId: assistantMsgId, content: fullResponse, sqlGenerated, sqlResults }
+      return { messageId: assistantMsgId, content: fullResponse, sqlGenerated, sqlResults, chartConfig }
     } catch (err) {
       window.webContents.send(IPC.AI_CHAT_STREAM_ERROR, {
         type: 'error',

@@ -11,6 +11,7 @@ function mapMessage(row: Record<string, unknown>) {
     content: row.content,
     sqlGenerated: row.sql_generated || undefined,
     sqlResults: row.sql_results || undefined,
+    chartConfig: row.chart_config || undefined,
     tokenCount: row.token_count || undefined,
     createdAt: row.created_at
   }

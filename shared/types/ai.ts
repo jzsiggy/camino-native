@@ -15,6 +15,7 @@ export interface ChatMessage {
   content: string
   sqlGenerated?: string
   sqlResults?: string
+  chartConfig?: string
   tokenCount?: number
   createdAt: string
 }
