@@ -42,6 +42,7 @@ export interface AiConnectionContext {
   contextType: AiContextType
   content: string
   source: string
+  metadata?: string
   createdAt: string
   updatedAt: string
 }
@@ -59,7 +60,7 @@ export interface WizardQuestion {
 }
 
 export interface WizardState {
-  step: 'introspecting' | 'reviewing' | 'questions' | 'complete'
+  step: 'introspecting' | 'reviewing' | 'complete'
   schemaSummary?: string
   questions?: WizardQuestion[]
 }

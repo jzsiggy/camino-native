@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Button, Intent, Icon } from '@blueprintjs/core'
+import { Button, Intent, Icon, Spinner } from '@blueprintjs/core'
 import { useAppStore } from '../../stores/app.store'
 import { useAiStore } from '../../stores/ai.store'
-import { useConversations, useConversationMessages, useCreateConversation, useSendMessage, useAiStream } from '../../hooks/useAiChat'
+import { useConversations, useConversationMessages, useCreateConversation, useSendMessage, useAiStream, useWizardStatus } from '../../hooks/useAiChat'
 import { useEditorStore } from '../../stores/editor.store'
 import { useExecuteQuery } from '../../hooks/useQuery'
 import { v4 as uuid } from 'uuid'
@@ -10,7 +10,8 @@ import type { ChatMessage } from '@shared/types/ai'
 
 export const AiChatPanel: React.FC = () => {
   const { activeConnectionId, setRightPanel } = useAppStore()
-  const { activeConversationId, setActiveConversationId, streamingContent, isStreaming } = useAiStore()
+  const { activeConversationId, setActiveConversationId, streamingContent, isStreaming, isExecutingQuery, pendingUserMessage, setWizardOpen } = useAiStore()
+  const { data: wizardStatus } = useWizardStatus(activeConnectionId)
   const { data: conversations = [] } = useConversations(activeConnectionId)
   const { data: messages = [] } = useConversationMessages(activeConversationId)
   const createConversation = useCreateConversation()
@@ -79,12 +80,25 @@ export const AiChatPanel: React.FC = () => {
           )}
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
-          <Button minimal small icon="plus" onClick={handleNewConversation} />
+          <Button
+            minimal
+            small
+            icon="plus"
+            disabled={!wizardStatus?.completed}
+            title={wizardStatus?.completed ? 'New Conversation' : 'Run the AI Setup Wizard first'}
+            onClick={handleNewConversation}
+          />
           <Button minimal small icon="th" text="Results" onClick={() => setRightPanel('results')} />
         </div>
       </div>
 
-      {!activeConversationId ? (
+      {!wizardStatus?.completed ? (
+        <div className="empty-state">
+          <Icon icon="learning" size={32} style={{ opacity: 0.3 }} />
+          <p>Run the AI Setup Wizard to start chatting</p>
+          <Button intent={Intent.PRIMARY} text="Run Setup Wizard" onClick={() => setWizardOpen(true)} />
+        </div>
+      ) : !activeConversationId ? (
         <div className="empty-state">
           <Icon icon="chat" size={32} style={{ opacity: 0.3 }} />
           <p>Start a new conversation</p>
@@ -96,9 +110,22 @@ export const AiChatPanel: React.FC = () => {
             {messages.map((msg: ChatMessage) => (
               <AiMessage key={msg.id} message={msg} connectionId={activeConnectionId} />
             ))}
+            {pendingUserMessage && (
+              <div className="ai-message user">
+                <div className="message-content">
+                  <span>{pendingUserMessage}</span>
+                </div>
+              </div>
+            )}
             {isStreaming && streamingContent && (
               <div className="ai-message assistant">
                 <MessageContent content={streamingContent} connectionId={activeConnectionId} />
+                {isExecutingQuery && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <Spinner size={14} />
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Running query...</span>
+                  </div>
+                )}
               </div>
             )}
             <div ref={messagesEndRef} />

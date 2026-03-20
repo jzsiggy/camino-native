@@ -40,11 +40,12 @@ export function useDeleteConversation() {
 
 export function useSendMessage() {
   const queryClient = useQueryClient()
-  const { setIsStreaming, appendStreamingContent, clearStreamingContent } = useAiStore()
+  const { setIsStreaming, appendStreamingContent, clearStreamingContent, setPendingUserMessage } = useAiStore()
 
   return useMutation({
     mutationFn: async ({ conversationId, message }: { conversationId: string; message: string }) => {
       clearStreamingContent()
+      setPendingUserMessage(message)
       setIsStreaming(true)
       try {
         const result = await aiApi.sendMessage(conversationId, message)
@@ -54,6 +55,7 @@ export function useSendMessage() {
       }
     },
     onSuccess: (_data, vars) => {
+      setPendingUserMessage(null)
       queryClient.invalidateQueries({ queryKey: ['messages', vars.conversationId] })
       clearStreamingContent()
     }
@@ -110,9 +112,28 @@ export function useWizard() {
 export function useWizardAnswer() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ connectionId, answers }: { connectionId: string; answers: Record<string, string> }) =>
-      aiApi.wizardAnswer(connectionId, answers),
-    onSuccess: (_data, vars) =>
+    mutationFn: ({
+      connectionId,
+      answers,
+      questions,
+      additionalContext
+    }: {
+      connectionId: string
+      answers: Record<string, string>
+      questions: { id: string; question: string }[]
+      additionalContext: string
+    }) => aiApi.wizardAnswer(connectionId, answers, questions, additionalContext),
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['aiContext', vars.connectionId] })
+      queryClient.invalidateQueries({ queryKey: ['wizardStatus', vars.connectionId] })
+    }
+  })
+}
+
+export function useWizardStatus(connectionId: string | null) {
+  return useQuery({
+    queryKey: ['wizardStatus', connectionId],
+    queryFn: () => aiApi.wizardStatus(connectionId!),
+    enabled: !!connectionId
   })
 }

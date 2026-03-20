@@ -8,7 +8,7 @@ import { queryApi } from '../../lib/ipc-client'
 import type { QueryResult } from '@shared/types/query'
 
 export const ScriptView: React.FC = () => {
-  const { activeScriptId, activeConnectionId } = useAppStore()
+  const { activeScriptId, activeConnectionId, theme } = useAppStore()
   const { data: script } = useScript(activeScriptId)
   const updateScript = useUpdateScript()
   const editorRef = useRef<any>(null)
@@ -130,7 +130,7 @@ export const ScriptView: React.FC = () => {
             value={content}
             onChange={handleContentChange}
             onMount={handleEditorMount}
-            theme="vs-dark"
+            theme={theme === 'dark' ? 'vs-dark' : 'vs'}
             options={{
               minimap: { enabled: false },
               fontSize: 14,

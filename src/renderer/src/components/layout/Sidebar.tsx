@@ -6,12 +6,13 @@ import { useAiStore } from '../../stores/ai.store'
 import { ConnectionTree } from '../connections/ConnectionTree'
 import { SidebarItemList } from './SidebarItemList'
 import { useScripts, useCreateScript, useDeleteScript, useUpdateScript } from '../../hooks/useScripts'
-import { useConversations, useCreateConversation, useDeleteConversation } from '../../hooks/useAiChat'
+import { useConversations, useCreateConversation, useDeleteConversation, useWizardStatus } from '../../hooks/useAiChat'
 import { useConnections } from '../../hooks/useConnections'
 
 export const Sidebar: React.FC = () => {
   const { setConnectionDialogOpen, setSettingsDialogOpen, activeConnectionId, activeItemType, activeScriptId, selectItem } = useAppStore()
   const { activeConversationId, setActiveConversationId } = useAiStore()
+  const { data: wizardStatus } = useWizardStatus(activeConnectionId)
   const { data: connections = [] } = useConnections()
   const { data: scripts = [] } = useScripts(activeConnectionId)
   const { data: conversations = [] } = useConversations(activeConnectionId)
@@ -101,7 +102,14 @@ export const Sidebar: React.FC = () => {
               {activeConnectionId && (
                 <div style={{ display: 'flex', gap: 4 }}>
                   <Button minimal small icon="document" title="New Script" onClick={handleNewScript} />
-                  <Button minimal small icon="chat" title="New Conversation" onClick={handleNewConversation} />
+                  <Button
+                    minimal
+                    small
+                    icon="chat"
+                    title={wizardStatus?.completed ? 'New Conversation' : 'Run the AI Setup Wizard first'}
+                    disabled={!wizardStatus?.completed}
+                    onClick={handleNewConversation}
+                  />
                 </div>
               )}
             </div>

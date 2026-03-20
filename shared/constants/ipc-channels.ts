@@ -28,6 +28,7 @@ export const IPC = {
   AI_CHAT_STREAM_ERROR: 'ai:chat-stream-error',
   AI_SETUP_WIZARD_START: 'ai:setup-wizard-start',
   AI_SETUP_WIZARD_ANSWER: 'ai:setup-wizard-answer',
+  AI_WIZARD_STATUS: 'ai:wizard-status',
   AI_CONTEXT_GET: 'ai:context-get',
   AI_CONTEXT_UPDATE: 'ai:context-update',
   AI_CONTEXT_DELETE: 'ai:context-delete',

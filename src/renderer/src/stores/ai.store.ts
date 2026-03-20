@@ -19,6 +19,9 @@ export interface AiState {
   wizardOpen: boolean
   setWizardOpen: (open: boolean) => void
 
+  pendingUserMessage: string | null
+  setPendingUserMessage: (msg: string | null) => void
+
   contextViewerOpen: boolean
   setContextViewerOpen: (open: boolean) => void
 }
@@ -41,6 +44,9 @@ export const useAiStore = create<AiState>((set) => ({
 
   wizardOpen: false,
   setWizardOpen: (open) => set({ wizardOpen: open }),
+
+  pendingUserMessage: null,
+  setPendingUserMessage: (msg) => set({ pendingUserMessage: msg }),
 
   contextViewerOpen: false,
   setContextViewerOpen: (open) => set({ contextViewerOpen: open })

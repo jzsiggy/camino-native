@@ -2,6 +2,7 @@ import React, { useCallback, useRef } from 'react'
 import Editor, { type OnMount } from '@monaco-editor/react'
 import { Button, Intent } from '@blueprintjs/core'
 import { useEditorStore, type EditorTab } from '../../stores/editor.store'
+import { useAppStore } from '../../stores/app.store'
 import { useExecuteQuery } from '../../hooks/useQuery'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 
 export const SqlEditor: React.FC<Props> = ({ tab }) => {
   const { updateTabContent } = useEditorStore()
+  const { theme } = useAppStore()
   const { execute } = useExecuteQuery()
   const editorRef = useRef<any>(null)
 
@@ -67,7 +69,7 @@ export const SqlEditor: React.FC<Props> = ({ tab }) => {
           value={tab.content}
           onChange={(value) => updateTabContent(tab.id, value || '')}
           onMount={handleEditorMount}
-          theme="vs-dark"
+          theme={theme === 'dark' ? 'vs-dark' : 'vs'}
           options={{
             minimap: { enabled: false },
             fontSize: 14,

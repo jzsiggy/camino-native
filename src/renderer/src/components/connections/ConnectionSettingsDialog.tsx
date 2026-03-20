@@ -6,6 +6,8 @@ import {
 import { useAppStore } from '../../stores/app.store'
 import { useAiStore } from '../../stores/ai.store'
 import { useConnection } from '../../hooks/useConnections'
+import { useWizardStatus } from '../../hooks/useAiChat'
+import { AiContextList } from '../ai/AiContextViewer'
 
 export const ConnectionSettingsDialog: React.FC = () => {
   const {
@@ -15,8 +17,9 @@ export const ConnectionSettingsDialog: React.FC = () => {
     setConnectionDialogOpen, setEditingConnection
   } = useAppStore()
 
-  const { setWizardOpen, setContextViewerOpen } = useAiStore()
+  const { setWizardOpen } = useAiStore()
   const { data: connection } = useConnection(connectionSettingsId)
+  const { data: wizardStatus } = useWizardStatus(connectionSettingsId)
 
   // Auto-close if connection was deleted
   if (connectionSettingsOpen && connectionSettingsId && connection === null) {
@@ -39,12 +42,6 @@ export const ConnectionSettingsDialog: React.FC = () => {
     setActiveConnectionId(connection.id)
     setConnectionSettingsOpen(false)
     setWizardOpen(true)
-  }
-
-  const handleContextViewer = () => {
-    setActiveConnectionId(connection.id)
-    setConnectionSettingsOpen(false)
-    setContextViewerOpen(true)
   }
 
   const handleClose = () => {
@@ -90,22 +87,34 @@ export const ConnectionSettingsDialog: React.FC = () => {
   )
 
   const aiTab = (
-    <div style={{ paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <Button
-        icon="learning"
-        text="Run AI Setup Wizard"
-        disabled={!isConnected}
-        onClick={handleWizard}
-      />
-      <Button
-        icon="list-detail-view"
-        text="View AI Context"
-        onClick={handleContextViewer}
-      />
-      {!isConnected && (
-        <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>
-          Connect to this database to run the AI Setup Wizard.
-        </p>
+    <div style={{ paddingTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {wizardStatus?.completed ? (
+        <>
+          <AiContextList connectionId={connection.id} />
+          <Button
+            icon="refresh"
+            text="Re-run AI Setup Wizard"
+            disabled={!isConnected}
+            onClick={handleWizard}
+          />
+        </>
+      ) : (
+        <>
+          <p style={{ fontSize: 13, margin: 0 }}>
+            Run the AI Setup Wizard to configure context for this connection.
+          </p>
+          <Button
+            icon="learning"
+            text="Run AI Setup Wizard"
+            disabled={!isConnected}
+            onClick={handleWizard}
+          />
+          {!isConnected && (
+            <p style={{ fontSize: 12, opacity: 0.6, margin: 0 }}>
+              Connect to this database to run the AI Setup Wizard.
+            </p>
+          )}
+        </>
       )}
     </div>
   )

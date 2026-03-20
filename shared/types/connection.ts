@@ -12,6 +12,7 @@ export interface ConnectionConfig {
   ssl_enabled?: boolean
   file_path?: string // For SQLite
   extra_params?: string // JSON
+  ai_wizard_completed?: boolean
   created_at: string
   updated_at: string
 }

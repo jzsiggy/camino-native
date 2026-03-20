@@ -91,6 +91,18 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     sql: `
       ALTER TABLE messages ADD COLUMN chart_config TEXT;
     `
+  },
+  {
+    name: '005_context_metadata.sql',
+    sql: `
+      ALTER TABLE ai_connection_context ADD COLUMN metadata TEXT;
+    `
+  },
+  {
+    name: '006_ai_wizard_completed.sql',
+    sql: `
+      ALTER TABLE connections ADD COLUMN ai_wizard_completed INTEGER DEFAULT 0;
+    `
   }
 ]
 

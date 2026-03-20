@@ -8,7 +8,7 @@ import { ResultsChart } from './ResultsChart'
 
 export const ConversationView: React.FC = () => {
   const { activeConnectionId } = useAppStore()
-  const { activeConversationId, streamingContent, isStreaming, isExecutingQuery } = useAiStore()
+  const { activeConversationId, streamingContent, isStreaming, isExecutingQuery, pendingUserMessage } = useAiStore()
   const { data: messages = [] } = useConversationMessages(activeConversationId)
   const sendMessage = useSendMessage()
   const [input, setInput] = useState('')
@@ -49,15 +49,22 @@ export const ConversationView: React.FC = () => {
         {messages.map((msg: ChatMessage) => (
           <ConversationMessage key={msg.id} message={msg} />
         ))}
-        {isExecutingQuery && (
-          <div className="ai-message assistant" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Spinner size={14} />
-            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Running query...</span>
+        {pendingUserMessage && (
+          <div className="ai-message user">
+            <div className="message-content">
+              <span>{pendingUserMessage}</span>
+            </div>
           </div>
         )}
-        {isStreaming && streamingContent && !isExecutingQuery && (
+        {isStreaming && streamingContent && (
           <div className="ai-message assistant">
             <MessageContent content={streamingContent} />
+            {isExecutingQuery && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                <Spinner size={14} />
+                <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Running query...</span>
+              </div>
+            )}
           </div>
         )}
         <div ref={messagesEndRef} />

@@ -12,7 +12,8 @@ import {
   getCachedSchema,
   buildContextString,
   parseContextUpdates,
-  saveContextUpdate
+  saveContextUpdate,
+  hasWizardContext
 } from '../ai/context-manager'
 import { poolManager } from '../db/pool-manager'
 
@@ -169,16 +170,19 @@ export function registerAiIpc(): void {
         }
       }
 
-      // Save assistant message
-      db.prepare(
-        'INSERT INTO messages (id, conversation_id, role, content, sql_generated, sql_results, chart_config, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(assistantMsgId, conversationId, 'assistant', fullResponse, sqlGenerated, sqlResults, chartConfig, new Date().toISOString())
-
       // Parse and save context updates
       const updates = parseContextUpdates(fullResponse)
       for (const update of updates) {
         saveContextUpdate(connectionId, update.type, update.content, 'conversation')
       }
+
+      // Strip context_update tags from displayed/saved content
+      fullResponse = fullResponse.replace(/<context_update type="[^"]*">[\s\S]*?<\/context_update>/g, '').trim()
+
+      // Save assistant message
+      db.prepare(
+        'INSERT INTO messages (id, conversation_id, role, content, sql_generated, sql_results, chart_config, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(assistantMsgId, conversationId, 'assistant', fullResponse, sqlGenerated, sqlResults, chartConfig, new Date().toISOString())
 
       // Update conversation timestamp
       db.prepare('UPDATE conversations SET updated_at = ? WHERE id = ?')
@@ -246,14 +250,47 @@ export function registerAiIpc(): void {
     }
   })
 
-  ipcMain.handle(IPC.AI_SETUP_WIZARD_ANSWER, async (_event, connectionId: string, answers: Record<string, string>) => {
-    // Save answers as business rules
-    for (const [, answer] of Object.entries(answers)) {
-      if (answer.trim()) {
-        saveContextUpdate(connectionId, 'business_rule', answer, 'wizard')
+  ipcMain.handle(IPC.AI_SETUP_WIZARD_ANSWER, async (
+    _event,
+    connectionId: string,
+    answers: Record<string, string>,
+    questions: { id: string; question: string }[],
+    additionalContext: string
+  ) => {
+    // Save question answers with metadata
+    for (const q of questions) {
+      const answer = answers[q.id]
+      if (answer && answer.trim()) {
+        saveContextUpdate(
+          connectionId,
+          'business_rule',
+          answer,
+          'wizard',
+          JSON.stringify({ questionText: q.question })
+        )
       }
     }
+    // Save additional context
+    if (additionalContext && additionalContext.trim()) {
+      saveContextUpdate(
+        connectionId,
+        'custom',
+        additionalContext,
+        'wizard',
+        JSON.stringify({ subSource: 'additional_context' })
+      )
+    }
+
+    // Mark wizard as completed on the connection
+    const db = getAppDb()
+    db.prepare('UPDATE connections SET ai_wizard_completed = 1 WHERE id = ?')
+      .run(connectionId)
+
     return { success: true }
+  })
+
+  ipcMain.handle(IPC.AI_WIZARD_STATUS, (_event, connectionId: string) => {
+    return { completed: hasWizardContext(connectionId) }
   })
 
   // Context management

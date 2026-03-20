@@ -19,6 +19,8 @@ export const ConnectionDialog: React.FC = () => {
   const updateMutation = useUpdateConnection()
   const testMutation = useTestConnection()
 
+  const [testPassed, setTestPassed] = useState(false)
+
   const [form, setForm] = useState<ConnectionCreateInput>({
     name: '',
     engine: 'postgres',
@@ -52,14 +54,20 @@ export const ConnectionDialog: React.FC = () => {
     }
   }, [editingConnection, connectionDialogOpen])
 
+  const updateForm = (updater: Parameters<typeof setForm>[0]) => {
+    setForm(updater)
+    setTestPassed(false)
+  }
+
   const handleClose = () => {
     setConnectionDialogOpen(false)
     setEditingConnection(null)
     testMutation.reset()
+    setTestPassed(false)
   }
 
   const handleEngineChange = (engine: DatabaseEngine) => {
-    setForm((f) => ({ ...f, engine, port: defaultPorts[engine] }))
+    updateForm((f) => ({ ...f, engine, port: defaultPorts[engine] }))
   }
 
   const handleSave = async () => {
@@ -72,7 +80,11 @@ export const ConnectionDialog: React.FC = () => {
   }
 
   const handleTest = () => {
-    testMutation.mutate(form)
+    testMutation.mutate(form, {
+      onSuccess: (result) => {
+        if (result.success) setTestPassed(true)
+      }
+    })
   }
 
   const isSqlite = form.engine === 'sqlite'
@@ -89,7 +101,7 @@ export const ConnectionDialog: React.FC = () => {
           <InputGroup
             id="name"
             value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            onChange={(e) => updateForm((f) => ({ ...f, name: e.target.value }))}
             placeholder="My Database"
           />
         </FormGroup>
@@ -112,7 +124,7 @@ export const ConnectionDialog: React.FC = () => {
             <InputGroup
               id="file_path"
               value={form.file_path || ''}
-              onChange={(e) => setForm((f) => ({ ...f, file_path: e.target.value }))}
+              onChange={(e) => updateForm((f) => ({ ...f, file_path: e.target.value }))}
               placeholder="/path/to/database.db"
             />
           </FormGroup>
@@ -123,7 +135,7 @@ export const ConnectionDialog: React.FC = () => {
                 <InputGroup
                   id="host"
                   value={form.host || ''}
-                  onChange={(e) => setForm((f) => ({ ...f, host: e.target.value }))}
+                  onChange={(e) => updateForm((f) => ({ ...f, host: e.target.value }))}
                 />
               </FormGroup>
               <FormGroup label="Port" labelFor="port" style={{ width: 100 }}>
@@ -131,7 +143,7 @@ export const ConnectionDialog: React.FC = () => {
                   id="port"
                   type="number"
                   value={String(form.port || '')}
-                  onChange={(e) => setForm((f) => ({ ...f, port: parseInt(e.target.value) || undefined }))}
+                  onChange={(e) => updateForm((f) => ({ ...f, port: parseInt(e.target.value) || undefined }))}
                 />
               </FormGroup>
             </div>
@@ -140,7 +152,7 @@ export const ConnectionDialog: React.FC = () => {
               <InputGroup
                 id="database"
                 value={form.database_name || ''}
-                onChange={(e) => setForm((f) => ({ ...f, database_name: e.target.value }))}
+                onChange={(e) => updateForm((f) => ({ ...f, database_name: e.target.value }))}
               />
             </FormGroup>
 
@@ -148,7 +160,7 @@ export const ConnectionDialog: React.FC = () => {
               <InputGroup
                 id="username"
                 value={form.username || ''}
-                onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+                onChange={(e) => updateForm((f) => ({ ...f, username: e.target.value }))}
               />
             </FormGroup>
 
@@ -157,7 +169,7 @@ export const ConnectionDialog: React.FC = () => {
                 id="password"
                 type="password"
                 value={form.password || ''}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                onChange={(e) => updateForm((f) => ({ ...f, password: e.target.value }))}
                 placeholder={editingConnection ? '(unchanged)' : ''}
               />
             </FormGroup>
@@ -165,7 +177,7 @@ export const ConnectionDialog: React.FC = () => {
             <Switch
               label="SSL Enabled"
               checked={form.ssl_enabled || false}
-              onChange={(e) => setForm((f) => ({ ...f, ssl_enabled: (e.target as HTMLInputElement).checked }))}
+              onChange={(e) => updateForm((f) => ({ ...f, ssl_enabled: (e.target as HTMLInputElement).checked }))}
             />
           </>
         )}
@@ -198,11 +210,17 @@ export const ConnectionDialog: React.FC = () => {
               intent={Intent.PRIMARY}
               onClick={handleSave}
               loading={createMutation.isPending || updateMutation.isPending}
-              disabled={!form.name}
+              disabled={!form.name || !testPassed}
             />
           </>
         }
-      />
+      >
+        {!testPassed && (
+          <span style={{ fontSize: 12, color: 'var(--text-muted, #999)' }}>
+            Test the connection before saving
+          </span>
+        )}
+      </DialogFooter>
     </Dialog>
   )
 }

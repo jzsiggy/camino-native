@@ -14,7 +14,7 @@ export const AiSetupWizard: React.FC = () => {
   const wizard = useWizard()
   const wizardAnswer = useWizardAnswer()
 
-  const [step, setStep] = useState<'start' | 'reviewing' | 'questions' | 'complete'>('start')
+  const [step, setStep] = useState<'start' | 'reviewing' | 'complete'>('start')
   const [schemaSummary, setSchemaSummary] = useState('')
   const [questions, setQuestions] = useState<WizardQuestion[]>([])
   const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -28,31 +28,37 @@ export const AiSetupWizard: React.FC = () => {
       setSchemaSummary(result.schemaSummary)
       setQuestions(result.questions)
       setStep('reviewing')
-    } catch (err) {
+    } catch {
       setStep('start')
     }
-  }
-
-  const handleProceedToQuestions = () => {
-    if (additionalContext.trim()) {
-      setAnswers((a) => ({ ...a, _additional: additionalContext }))
-    }
-    setStep('questions')
   }
 
   const handleComplete = async () => {
     if (!activeConnectionId) return
-    await wizardAnswer.mutateAsync({ connectionId: activeConnectionId, answers })
+    await wizardAnswer.mutateAsync({
+      connectionId: activeConnectionId,
+      answers,
+      questions: questions.map((q) => ({ id: q.id, question: q.question })),
+      additionalContext
+    })
     setStep('complete')
     setTimeout(() => {
       setWizardOpen(false)
-      setStep('start')
+      resetState()
     }, 1500)
+  }
+
+  const resetState = () => {
+    setStep('start')
+    setSchemaSummary('')
+    setQuestions([])
+    setAnswers({})
+    setAdditionalContext('')
   }
 
   const handleClose = () => {
     setWizardOpen(false)
-    setStep('start')
+    resetState()
   }
 
   return (
@@ -87,7 +93,29 @@ export const AiSetupWizard: React.FC = () => {
                 {schemaSummary}
               </pre>
             </Callout>
-            <div style={{ marginTop: 12 }}>
+
+            {questions.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <p style={{ marginBottom: 8, fontSize: 13, fontWeight: 500 }}>
+                  Answer these questions to help the AI better understand your database:
+                </p>
+                {questions.map((q) => (
+                  <div key={q.id} style={{ marginBottom: 12 }}>
+                    <p style={{ fontWeight: 500, fontSize: 13 }}>{q.question}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{q.context}</p>
+                    <TextArea
+                      fill
+                      rows={2}
+                      value={answers[q.id] || ''}
+                      onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
+                      placeholder="Your answer (optional)"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ marginTop: 16 }}>
               <p style={{ marginBottom: 8, fontSize: 13 }}>
                 Add any additional context about your database (business rules, conventions, etc.):
               </p>
@@ -99,27 +127,6 @@ export const AiSetupWizard: React.FC = () => {
                 placeholder="e.g., 'status 1 = active, 2 = inactive. Customer names are stored as last_name, first_name.'"
               />
             </div>
-          </div>
-        )}
-
-        {step === 'questions' && (
-          <div>
-            <p style={{ marginBottom: 12, fontSize: 13 }}>
-              Answer these questions to help the AI better understand your database:
-            </p>
-            {questions.map((q) => (
-              <div key={q.id} style={{ marginBottom: 12 }}>
-                <p style={{ fontWeight: 500, fontSize: 13 }}>{q.question}</p>
-                <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{q.context}</p>
-                <TextArea
-                  fill
-                  rows={2}
-                  value={answers[q.id] || ''}
-                  onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
-                  placeholder="Your answer (optional)"
-                />
-              </div>
-            ))}
           </div>
         )}
 
@@ -137,9 +144,6 @@ export const AiSetupWizard: React.FC = () => {
               <Button intent={Intent.PRIMARY} text="Start" onClick={handleStart} />
             )}
             {step === 'reviewing' && !wizard.isPending && (
-              <Button intent={Intent.PRIMARY} text="Next" onClick={handleProceedToQuestions} />
-            )}
-            {step === 'questions' && (
               <Button
                 intent={Intent.PRIMARY}
                 text="Complete Setup"

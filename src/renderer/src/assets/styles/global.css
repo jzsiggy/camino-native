@@ -418,12 +418,13 @@ body.bp5-dark {
   background: var(--sidebar-bg);
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   color: var(--text-primary);
   font-size: 13px;
+  line-height: 18px;
   resize: none;
   font-family: inherit;
-  min-height: 40px;
+  min-height: 38px;
   max-height: 120px;
 }
 

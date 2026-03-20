@@ -48,7 +48,13 @@ export const aiApi = {
   onStreamEnd: (callback: (chunk: AiStreamChunk) => void) => on(IPC.AI_CHAT_STREAM_END, callback as (...args: unknown[]) => void),
   onStreamError: (callback: (chunk: AiStreamChunk) => void) => on(IPC.AI_CHAT_STREAM_ERROR, callback as (...args: unknown[]) => void),
   wizardStart: (connectionId: string) => invoke<{ schemaSummary: string; questions: WizardQuestion[] }>(IPC.AI_SETUP_WIZARD_START, connectionId),
-  wizardAnswer: (connectionId: string, answers: Record<string, string>) => invoke<{ success: boolean }>(IPC.AI_SETUP_WIZARD_ANSWER, connectionId, answers),
+  wizardAnswer: (
+    connectionId: string,
+    answers: Record<string, string>,
+    questions: { id: string; question: string }[],
+    additionalContext: string
+  ) => invoke<{ success: boolean }>(IPC.AI_SETUP_WIZARD_ANSWER, connectionId, answers, questions, additionalContext),
+  wizardStatus: (connectionId: string) => invoke<{ completed: boolean }>(IPC.AI_WIZARD_STATUS, connectionId),
   getContext: (connectionId: string) => invoke<AiConnectionContext[]>(IPC.AI_CONTEXT_GET, connectionId),
   updateContext: (contextId: string, content: string) => invoke<{ success: boolean }>(IPC.AI_CONTEXT_UPDATE, contextId, content),
   deleteContext: (contextId: string) => invoke<{ success: boolean }>(IPC.AI_CONTEXT_DELETE, contextId)

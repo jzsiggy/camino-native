@@ -68,12 +68,21 @@ export function saveContextUpdate(
   connectionId: string,
   contextType: string,
   content: string,
-  source: string
+  source: string,
+  metadata?: string
 ): void {
   const db = getAppDb()
   const now = new Date().toISOString()
   db.prepare(
-    `INSERT INTO ai_connection_context (id, connection_id, context_type, content, source, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(uuid(), connectionId, contextType, content, source, now, now)
+    `INSERT INTO ai_connection_context (id, connection_id, context_type, content, source, metadata, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(uuid(), connectionId, contextType, content, source, metadata ?? null, now, now)
+}
+
+export function hasWizardContext(connectionId: string): boolean {
+  const db = getAppDb()
+  const row = db
+    .prepare('SELECT ai_wizard_completed FROM connections WHERE id = ?')
+    .get(connectionId) as { ai_wizard_completed: number } | undefined
+  return row?.ai_wizard_completed === 1
 }
