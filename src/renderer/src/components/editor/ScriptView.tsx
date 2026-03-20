@@ -4,6 +4,7 @@ import Editor, { type OnMount } from '@monaco-editor/react'
 import { Button, Intent, Icon, NonIdealState } from '@blueprintjs/core'
 import { useAppStore } from '../../stores/app.store'
 import { useScript, useUpdateScript } from '../../hooks/useScripts'
+import { useConnection } from '../../hooks/useConnections'
 import { queryApi } from '../../lib/ipc-client'
 import type { QueryResult } from '@shared/types/query'
 import { getStatementAtCursor } from './getStatementAtCursor'
@@ -11,6 +12,7 @@ import { getStatementAtCursor } from './getStatementAtCursor'
 export const ScriptView: React.FC = () => {
   const { activeScriptId, activeConnectionId, theme } = useAppStore()
   const { data: script } = useScript(activeScriptId)
+  const { data: connection } = useConnection(activeConnectionId)
   const updateScript = useUpdateScript()
   const editorRef = useRef<any>(null)
   const [title, setTitle] = useState('')
@@ -154,6 +156,12 @@ export const ScriptView: React.FC = () => {
           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
             {navigator.platform.includes('Mac') ? '\u2318' : 'Ctrl'}+Enter · Shift+Enter
           </span>
+          {connection && (
+            <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Icon icon="database" size={10} />
+              {connection.name}
+            </span>
+          )}
         </div>
       </div>
       <Allotment vertical>

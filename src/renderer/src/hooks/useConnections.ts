@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { connectionApi } from '../lib/ipc-client'
 import type { ConnectionCreateInput, ConnectionUpdateInput } from '@shared/types/connection'
 import { useAppStore } from '../stores/app.store'
+import { useAiStore } from '../stores/ai.store'
 
 export function useConnections() {
   return useQuery({
@@ -42,6 +43,17 @@ export function useDeleteConnection() {
     onSuccess: (_data, id) => {
       removeConnectedId(id)
       queryClient.invalidateQueries({ queryKey: ['connections'] })
+
+      const { activeConnectionId, setActiveConnectionId, selectItem, activeItemType } = useAppStore.getState()
+      const { activeConversationId, setActiveConversationId } = useAiStore.getState()
+
+      if (activeConnectionId === id) {
+        setActiveConnectionId(null)
+        if (activeItemType === 'conversation') {
+          setActiveConversationId(null)
+        }
+        selectItem(null, null)
+      }
     }
   })
 }

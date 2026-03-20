@@ -3,6 +3,7 @@ import { Button, Intent, Icon, Spinner } from '@blueprintjs/core'
 import { useAppStore } from '../../stores/app.store'
 import { useAiStore } from '../../stores/ai.store'
 import { useConversationMessages, useSendMessage, useAiStream } from '../../hooks/useAiChat'
+import { useConnection } from '../../hooks/useConnections'
 import type { ChatMessage } from '@shared/types/ai'
 import { ResultsChart } from './ResultsChart'
 
@@ -10,6 +11,7 @@ export const ConversationView: React.FC = () => {
   const { activeConnectionId } = useAppStore()
   const { activeConversationId, streamingContent, isStreaming, isExecutingQuery, pendingUserMessage } = useAiStore()
   const { data: messages = [] } = useConversationMessages(activeConversationId)
+  const { data: connection } = useConnection(activeConnectionId)
   const sendMessage = useSendMessage()
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -45,6 +47,12 @@ export const ConversationView: React.FC = () => {
 
   return (
     <div className="conversation-view">
+      {connection && (
+        <div style={{ padding: '6px 12px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Icon icon="database" size={10} />
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{connection.name}</span>
+        </div>
+      )}
       <div className="ai-chat-messages">
         {messages.map((msg: ChatMessage) => (
           <ConversationMessage key={msg.id} message={msg} />
