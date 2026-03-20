@@ -41,6 +41,26 @@ export function registerConversationIpc(): void {
     return { id, connection_id: connectionId, title: title || 'New Conversation', created_at: now, updated_at: now }
   })
 
+  ipcMain.handle(IPC.CONVERSATION_UPDATE, (_event, id: string, updates: { title?: string }) => {
+    const db = getAppDb()
+    const fields: string[] = []
+    const values: unknown[] = []
+
+    if (updates.title !== undefined) {
+      fields.push('title = ?')
+      values.push(updates.title)
+    }
+
+    if (fields.length === 0) return { success: true }
+
+    fields.push('updated_at = ?')
+    values.push(new Date().toISOString())
+    values.push(id)
+
+    db.prepare(`UPDATE conversations SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+    return { success: true }
+  })
+
   ipcMain.handle(IPC.CONVERSATION_DELETE, (_event, id: string) => {
     const db = getAppDb()
     db.prepare('DELETE FROM conversations WHERE id = ?').run(id)

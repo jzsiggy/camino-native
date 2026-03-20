@@ -30,6 +30,15 @@ export function useCreateConversation() {
   })
 }
 
+export function useUpdateConversation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: { title?: string } }) =>
+      conversationApi.update(id, updates),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversations'] })
+  })
+}
+
 export function useDeleteConversation() {
   const queryClient = useQueryClient()
   return useMutation({

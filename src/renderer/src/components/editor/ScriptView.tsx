@@ -135,6 +135,12 @@ export const ScriptView: React.FC = () => {
 
   return (
     <div className="script-view">
+      {connection && (
+        <div style={{ padding: '6px 12px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Icon icon="database" size={10} />
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{connection.name}</span>
+        </div>
+      )}
       <div className="script-header">
         <input
           className="script-title-input"
@@ -163,12 +169,6 @@ export const ScriptView: React.FC = () => {
           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
             {navigator.platform.includes('Mac') ? '\u2318' : 'Ctrl'}+Enter · Shift+Enter
           </span>
-          {connection && (
-            <span style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Icon icon="database" size={10} />
-              {connection.name}
-            </span>
-          )}
         </div>
       </div>
       <Allotment vertical>

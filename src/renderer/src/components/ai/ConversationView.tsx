@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Button, Callout, Intent, Icon, Spinner } from '@blueprintjs/core'
 import { useAppStore } from '../../stores/app.store'
 import { useAiStore } from '../../stores/ai.store'
-import { useConversationMessages, useSendMessage, useAiStream } from '../../hooks/useAiChat'
+import { useConversationMessages, useSendMessage, useAiStream, useConversations, useUpdateConversation } from '../../hooks/useAiChat'
 import { useConnection } from '../../hooks/useConnections'
 import type { ChatMessage } from '@shared/types/ai'
 import { ResultsChart } from './ResultsChart'
@@ -12,9 +12,38 @@ export const ConversationView: React.FC = () => {
   const { activeConversationId, streamingContent, isStreaming, isExecutingQuery, pendingUserMessage } = useAiStore()
   const { data: messages = [] } = useConversationMessages(activeConversationId)
   const { data: connection } = useConnection(activeConnectionId)
+  const { data: conversations = [] } = useConversations(activeConnectionId)
   const sendMessage = useSendMessage()
+  const updateConversation = useUpdateConversation()
   const [input, setInput] = useState('')
+  const [title, setTitle] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const conversation = conversations.find((c) => c.id === activeConversationId)
+
+  useEffect(() => {
+    if (conversation) {
+      setTitle(conversation.title)
+    }
+  }, [conversation?.id])
+
+  const debounceSaveTitle = useCallback(
+    (newTitle: string) => {
+      if (!activeConversationId) return
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = setTimeout(() => {
+        updateConversation.mutate({ id: activeConversationId, updates: { title: newTitle } })
+      }, 1500)
+    },
+    [activeConversationId, updateConversation]
+  )
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value
+    setTitle(newTitle)
+    debounceSaveTitle(newTitle)
+  }
 
   useAiStream()
 
@@ -53,6 +82,14 @@ export const ConversationView: React.FC = () => {
           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{connection.name}</span>
         </div>
       )}
+      <div className="script-header">
+        <input
+          className="script-title-input"
+          value={title}
+          onChange={handleTitleChange}
+          placeholder="Untitled Conversation"
+        />
+      </div>
       <div className="ai-chat-messages">
         {messages.map((msg: ChatMessage) => (
           <ConversationMessage key={msg.id} message={msg} />

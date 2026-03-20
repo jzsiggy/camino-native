@@ -75,6 +75,7 @@ export const conversationApi = {
   list: (connectionId: string) => invoke<Conversation[]>(IPC.CONVERSATION_LIST, connectionId),
   get: (id: string) => invoke<Conversation | null>(IPC.CONVERSATION_GET, id),
   create: (connectionId: string, title?: string) => invoke<Conversation>(IPC.CONVERSATION_CREATE, connectionId, title),
+  update: (id: string, updates: { title?: string }) => invoke<{ success: boolean }>(IPC.CONVERSATION_UPDATE, id, updates),
   delete: (id: string) => invoke<{ success: boolean }>(IPC.CONVERSATION_DELETE, id),
   messages: (conversationId: string) => invoke<ChatMessage[]>(IPC.CONVERSATION_MESSAGES, conversationId)
 }

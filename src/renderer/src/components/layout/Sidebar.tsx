@@ -6,7 +6,7 @@ import { useAiStore } from '../../stores/ai.store'
 import { ConnectionTree } from '../connections/ConnectionTree'
 import { SidebarItemList } from './SidebarItemList'
 import { useScripts, useCreateScript, useDeleteScript, useUpdateScript } from '../../hooks/useScripts'
-import { useConversations, useCreateConversation, useDeleteConversation, useWizardStatus } from '../../hooks/useAiChat'
+import { useConversations, useCreateConversation, useUpdateConversation, useDeleteConversation, useWizardStatus } from '../../hooks/useAiChat'
 import { useConnections } from '../../hooks/useConnections'
 
 export const Sidebar: React.FC = () => {
@@ -20,6 +20,7 @@ export const Sidebar: React.FC = () => {
   const updateScript = useUpdateScript()
   const deleteScript = useDeleteScript()
   const createConversation = useCreateConversation()
+  const updateConversation = useUpdateConversation()
   const deleteConversation = useDeleteConversation()
 
   const activeConnection = connections.find((c) => c.id === activeConnectionId)
@@ -55,6 +56,10 @@ export const Sidebar: React.FC = () => {
     if (activeScriptId === id) {
       selectItem(null, null)
     }
+  }
+
+  const handleRenameConversation = (id: string, newTitle: string) => {
+    updateConversation.mutate({ id, updates: { title: newTitle } })
   }
 
   const handleDeleteConversation = (id: string) => {
@@ -139,7 +144,7 @@ export const Sidebar: React.FC = () => {
                     items={(conversations || []).map((c) => ({ id: c.id, title: c.title, icon: 'chat' as const }))}
                     selectedId={activeItemType === 'conversation' ? activeConversationId : null}
                     onSelect={handleSelectConversation}
-                    onRename={() => {}}
+                    onRename={handleRenameConversation}
                     onDelete={handleDeleteConversation}
                   />
                 </>

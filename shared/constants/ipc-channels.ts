@@ -44,6 +44,7 @@ export const IPC = {
   CONVERSATION_LIST: 'conversation:list',
   CONVERSATION_GET: 'conversation:get',
   CONVERSATION_CREATE: 'conversation:create',
+  CONVERSATION_UPDATE: 'conversation:update',
   CONVERSATION_DELETE: 'conversation:delete',
   CONVERSATION_MESSAGES: 'conversation:messages',
 
