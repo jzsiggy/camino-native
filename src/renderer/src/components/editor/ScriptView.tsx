@@ -6,6 +6,7 @@ import { useAppStore } from '../../stores/app.store'
 import { useScript, useUpdateScript } from '../../hooks/useScripts'
 import { queryApi } from '../../lib/ipc-client'
 import type { QueryResult } from '@shared/types/query'
+import { getStatementAtCursor } from './getStatementAtCursor'
 
 export const ScriptView: React.FC = () => {
   const { activeScriptId, activeConnectionId, theme } = useAppStore()
@@ -82,6 +83,31 @@ export const ScriptView: React.FC = () => {
     }
   }, [activeConnectionId])
 
+  const handleExecuteCurrent = useCallback(async () => {
+    if (!activeConnectionId) return
+    const editor = editorRef.current
+    if (!editor) return
+
+    const sql = getStatementAtCursor(editor)
+    if (!sql.trim()) return
+
+    setIsExecuting(true)
+    try {
+      const queryResult = await queryApi.execute({ connectionId: activeConnectionId, sql: sql.trim() })
+      setResult(queryResult)
+    } catch (err) {
+      setResult({
+        columns: [],
+        rows: [],
+        rowCount: 0,
+        executionTime: 0,
+        error: (err as Error).message
+      })
+    } finally {
+      setIsExecuting(false)
+    }
+  }, [activeConnectionId])
+
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
     editor.addAction({
@@ -89,6 +115,13 @@ export const ScriptView: React.FC = () => {
       label: 'Execute Query',
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
       run: () => handleExecute()
+    })
+
+    editor.addAction({
+      id: 'execute-current-query',
+      label: 'Execute Current Query',
+      keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+      run: () => handleExecuteCurrent()
     })
   }
 
@@ -119,7 +152,7 @@ export const ScriptView: React.FC = () => {
             loading={isExecuting}
           />
           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-            {navigator.platform.includes('Mac') ? '\u2318' : 'Ctrl'}+Enter
+            {navigator.platform.includes('Mac') ? '\u2318' : 'Ctrl'}+Enter · Shift+Enter
           </span>
         </div>
       </div>

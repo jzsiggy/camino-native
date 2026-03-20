@@ -4,6 +4,7 @@ import { Button, Intent } from '@blueprintjs/core'
 import { useEditorStore, type EditorTab } from '../../stores/editor.store'
 import { useAppStore } from '../../stores/app.store'
 import { useExecuteQuery } from '../../hooks/useQuery'
+import { getStatementAtCursor } from './getStatementAtCursor'
 
 interface Props {
   tab: EditorTab
@@ -18,14 +19,32 @@ export const SqlEditor: React.FC<Props> = ({ tab }) => {
   const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
 
-    // Cmd/Ctrl+Enter to execute
+    // Cmd/Ctrl+Enter to execute all
     editor.addAction({
       id: 'execute-query',
       label: 'Execute Query',
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter],
       run: () => handleExecute()
     })
+
+    // Shift+Enter to execute current statement at cursor
+    editor.addAction({
+      id: 'execute-current-query',
+      label: 'Execute Current Query',
+      keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+      run: () => handleExecuteCurrent()
+    })
   }
+
+  const handleExecuteCurrent = useCallback(() => {
+    const editor = editorRef.current
+    if (!editor) return
+
+    const sql = getStatementAtCursor(editor)
+    if (sql.trim()) {
+      execute(tab.id, tab.connectionId, sql.trim())
+    }
+  }, [tab.id, tab.connectionId, execute])
 
   const handleExecute = useCallback(() => {
     const editor = editorRef.current
@@ -60,7 +79,7 @@ export const SqlEditor: React.FC<Props> = ({ tab }) => {
           loading={tab.isExecuting}
         />
         <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-          {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to execute
+          {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+Enter to run all · Shift+Enter for current statement
         </span>
       </div>
       <div style={{ flex: 1 }}>
