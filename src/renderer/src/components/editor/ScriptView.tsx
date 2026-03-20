@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react'
 import { Allotment } from 'allotment'
 import Editor, { type OnMount } from '@monaco-editor/react'
-import { Button, Intent, Icon, NonIdealState } from '@blueprintjs/core'
+import { Button, Intent, Icon, NonIdealState, Callout } from '@blueprintjs/core'
 import { useAppStore } from '../../stores/app.store'
 import { useScript, useUpdateScript } from '../../hooks/useScripts'
 import { useConnection } from '../../hooks/useConnections'
@@ -19,6 +19,7 @@ export const ScriptView: React.FC = () => {
   const [content, setContent] = useState('')
   const [result, setResult] = useState<QueryResult | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
+  const activeQueryIdRef = useRef<string | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Sync from script data
@@ -53,8 +54,29 @@ export const ScriptView: React.FC = () => {
     debounceSave({ content: newContent })
   }
 
+  const runQuery = useCallback(async (sql: string) => {
+    if (!activeConnectionId || !sql.trim()) return
+    const queryId = crypto.randomUUID()
+    activeQueryIdRef.current = queryId
+    setIsExecuting(true)
+    try {
+      const queryResult = await queryApi.execute({ connectionId: activeConnectionId, sql: sql.trim(), queryId })
+      setResult(queryResult)
+    } catch (err) {
+      setResult({
+        columns: [],
+        rows: [],
+        rowCount: 0,
+        executionTime: 0,
+        error: (err as Error).message
+      })
+    } finally {
+      activeQueryIdRef.current = null
+      setIsExecuting(false)
+    }
+  }, [activeConnectionId])
+
   const handleExecute = useCallback(async () => {
-    if (!activeConnectionId) return
     const editor = editorRef.current
     if (!editor) return
 
@@ -66,47 +88,23 @@ export const ScriptView: React.FC = () => {
       sql = editor.getValue()
     }
 
-    if (!sql.trim()) return
-
-    setIsExecuting(true)
-    try {
-      const queryResult = await queryApi.execute({ connectionId: activeConnectionId, sql: sql.trim() })
-      setResult(queryResult)
-    } catch (err) {
-      setResult({
-        columns: [],
-        rows: [],
-        rowCount: 0,
-        executionTime: 0,
-        error: (err as Error).message
-      })
-    } finally {
-      setIsExecuting(false)
-    }
-  }, [activeConnectionId])
+    await runQuery(sql)
+  }, [runQuery])
 
   const handleExecuteCurrent = useCallback(async () => {
-    if (!activeConnectionId) return
     const editor = editorRef.current
     if (!editor) return
-
     const sql = getStatementAtCursor(editor)
-    if (!sql.trim()) return
+    await runQuery(sql)
+  }, [runQuery])
 
-    setIsExecuting(true)
+  const handleCancel = useCallback(async () => {
+    const queryId = activeQueryIdRef.current
+    if (!activeConnectionId || !queryId) return
     try {
-      const queryResult = await queryApi.execute({ connectionId: activeConnectionId, sql: sql.trim() })
-      setResult(queryResult)
-    } catch (err) {
-      setResult({
-        columns: [],
-        rows: [],
-        rowCount: 0,
-        executionTime: 0,
-        error: (err as Error).message
-      })
-    } finally {
-      setIsExecuting(false)
+      await queryApi.cancel(activeConnectionId, queryId)
+    } catch {
+      // Query may have already finished
     }
   }, [activeConnectionId])
 
@@ -145,14 +143,23 @@ export const ScriptView: React.FC = () => {
           placeholder="Untitled Script"
         />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Button
-            small
-            icon="play"
-            intent={Intent.SUCCESS}
-            text="Run"
-            onClick={handleExecute}
-            loading={isExecuting}
-          />
+          {isExecuting ? (
+            <Button
+              small
+              icon="stop"
+              intent={Intent.DANGER}
+              text="Cancel"
+              onClick={handleCancel}
+            />
+          ) : (
+            <Button
+              small
+              icon="play"
+              intent={Intent.SUCCESS}
+              text="Run"
+              onClick={handleExecute}
+            />
+          )}
           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
             {navigator.platform.includes('Mac') ? '\u2318' : 'Ctrl'}+Enter · Shift+Enter
           </span>
@@ -208,6 +215,11 @@ export const ScriptView: React.FC = () => {
               </div>
             ) : (
               <>
+                {result.truncated && (
+                  <Callout intent={Intent.WARNING} icon="info-sign" style={{ margin: '8px 8px 0', fontSize: 12 }}>
+                    Results limited to {result.rowCount} rows
+                  </Callout>
+                )}
                 <div className="results-grid">
                   <table className="results-table">
                     <thead>

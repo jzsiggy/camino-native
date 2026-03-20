@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Button, Intent, Icon, Spinner } from '@blueprintjs/core'
+import { Button, Callout, Intent, Icon, Spinner } from '@blueprintjs/core'
 import { useAppStore } from '../../stores/app.store'
 import { useAiStore } from '../../stores/ai.store'
 import { useConversationMessages, useSendMessage, useAiStream } from '../../hooks/useAiChat'
@@ -107,6 +107,11 @@ const ResultsContent: React.FC<{ sqlResults: string }> = ({ sqlResults }) => {
     if (parsed.columns && parsed.rows) {
       return (
         <div className="inline-results-wrapper">
+          {parsed.truncated && (
+            <Callout intent={Intent.WARNING} icon="info-sign" style={{ marginBottom: 8, fontSize: 12 }}>
+              Results limited to {parsed.rows.length} rows
+            </Callout>
+          )}
           <div className="inline-table-scroll">
             <table className="results-table">
               <thead>

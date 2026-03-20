@@ -1,12 +1,14 @@
-import { Pool, type PoolConfig } from 'pg'
+import { Pool, type PoolClient, type PoolConfig } from 'pg'
 import type { DatabaseAdapter } from './adapter.interface'
-import type { QueryResult } from '@shared/types/query'
+import type { QueryResult, ExecuteOptions } from '@shared/types/query'
 import type { DatabaseSchema, ColumnDetail } from '@shared/types/schema'
 import type { ConnectionConfig } from '@shared/types/connection'
+import { addLimitIfNeeded } from './query-utils'
 
 export class PostgresAdapter implements DatabaseAdapter {
   private pool: Pool | null = null
   private config: ConnectionConfig
+  private activeQueries = new Map<string, { client: PoolClient; pid: number }>()
 
   constructor(config: ConnectionConfig) {
     this.config = config
@@ -55,12 +57,39 @@ export class PostgresAdapter implements DatabaseAdapter {
     return this.pool !== null
   }
 
-  async execute(sql: string, maxRows?: number): Promise<QueryResult> {
+  async execute(sql: string, options?: ExecuteOptions): Promise<QueryResult> {
     if (!this.pool) throw new Error('Not connected')
     const start = Date.now()
+    const maxRows = options?.maxRows
+    const timeoutMs = options?.timeoutMs
+    const queryId = options?.queryId
+
+    const client = await this.pool.connect()
     try {
-      const result = await this.pool.query(sql)
-      const rows = maxRows ? result.rows.slice(0, maxRows) : result.rows
+      // Get backend PID for cancellation support
+      if (queryId) {
+        const pidResult = await client.query('SELECT pg_backend_pid() as pid')
+        this.activeQueries.set(queryId, { client, pid: pidResult.rows[0].pid })
+      }
+
+      // Set statement timeout if specified
+      if (timeoutMs) {
+        await client.query(`SET statement_timeout = ${timeoutMs}`)
+      }
+
+      // Add server-side LIMIT for SELECT queries
+      const { sql: limitedSql, limitApplied } = addLimitIfNeeded(sql, maxRows)
+
+      const result = await client.query(limitedSql)
+
+      let rows = result.rows
+      let truncated = false
+
+      if (maxRows && limitApplied && rows.length > maxRows) {
+        rows = rows.slice(0, maxRows)
+        truncated = true
+      }
+
       const columns = (result.fields || []).map((f) => ({
         name: f.name,
         dataType: String(f.dataTypeID)
@@ -70,16 +99,37 @@ export class PostgresAdapter implements DatabaseAdapter {
         rows,
         rowCount: rows.length,
         affectedRows: result.rowCount ?? undefined,
-        executionTime: Date.now() - start
+        executionTime: Date.now() - start,
+        truncated
       }
     } catch (err) {
+      const message = (err as Error).message
+      const cancelled = message.includes('canceling statement') || message.includes('statement timeout')
       return {
         columns: [],
         rows: [],
         rowCount: 0,
         executionTime: Date.now() - start,
-        error: (err as Error).message
+        error: message,
+        cancelled
       }
+    } finally {
+      if (queryId) this.activeQueries.delete(queryId)
+      if (timeoutMs) {
+        try { await client.query('SET statement_timeout = 0') } catch { /* ignore */ }
+      }
+      client.release()
+    }
+  }
+
+  async cancelQuery(queryId: string): Promise<void> {
+    const entry = this.activeQueries.get(queryId)
+    if (!entry || !this.pool) return
+    const cancelClient = await this.pool.connect()
+    try {
+      await cancelClient.query('SELECT pg_cancel_backend($1)', [entry.pid])
+    } finally {
+      cancelClient.release()
     }
   }
 

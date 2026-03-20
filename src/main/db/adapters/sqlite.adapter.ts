@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3'
 import type { DatabaseAdapter } from './adapter.interface'
-import type { QueryResult } from '@shared/types/query'
+import type { QueryResult, ExecuteOptions } from '@shared/types/query'
 import type { DatabaseSchema, ColumnDetail } from '@shared/types/schema'
 import type { ConnectionConfig } from '@shared/types/connection'
 
@@ -45,25 +45,49 @@ export class SqliteAdapter implements DatabaseAdapter {
     return this.db !== null
   }
 
-  async execute(sql: string, maxRows?: number): Promise<QueryResult> {
+  async execute(sql: string, options?: ExecuteOptions): Promise<QueryResult> {
     if (!this.db) throw new Error('Not connected')
     const start = Date.now()
+    const maxRows = options?.maxRows
     try {
       const trimmed = sql.trim().toUpperCase()
       const isSelect = trimmed.startsWith('SELECT') || trimmed.startsWith('WITH') || trimmed.startsWith('PRAGMA')
 
       if (isSelect) {
         const stmt = this.db.prepare(sql)
-        const rows = stmt.all() as Record<string, unknown>[]
-        const limited = maxRows ? rows.slice(0, maxRows) : rows
-        const columns = limited.length > 0
-          ? Object.keys(limited[0]).map((name) => ({ name, dataType: 'TEXT' }))
-          : []
-        return {
-          columns,
-          rows: limited,
-          rowCount: limited.length,
-          executionTime: Date.now() - start
+
+        if (maxRows) {
+          // Use iterate() to avoid loading all rows into memory
+          const rows: Record<string, unknown>[] = []
+          let truncated = false
+          for (const row of stmt.iterate()) {
+            if (rows.length >= maxRows) {
+              truncated = true
+              break
+            }
+            rows.push(row as Record<string, unknown>)
+          }
+          const columns = rows.length > 0
+            ? Object.keys(rows[0]).map((name) => ({ name, dataType: 'TEXT' }))
+            : []
+          return {
+            columns,
+            rows,
+            rowCount: rows.length,
+            executionTime: Date.now() - start,
+            truncated
+          }
+        } else {
+          const rows = stmt.all() as Record<string, unknown>[]
+          const columns = rows.length > 0
+            ? Object.keys(rows[0]).map((name) => ({ name, dataType: 'TEXT' }))
+            : []
+          return {
+            columns,
+            rows,
+            rowCount: rows.length,
+            executionTime: Date.now() - start
+          }
         }
       } else {
         const result = this.db.prepare(sql).run()
@@ -84,6 +108,10 @@ export class SqliteAdapter implements DatabaseAdapter {
         error: (err as Error).message
       }
     }
+  }
+
+  async cancelQuery(): Promise<void> {
+    // No-op: better-sqlite3 is synchronous, cancellation requires worker threads
   }
 
   async getDatabases(): Promise<string[]> {

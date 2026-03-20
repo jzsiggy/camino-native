@@ -16,6 +16,7 @@ import {
   hasWizardContext
 } from '../ai/context-manager'
 import { poolManager } from '../db/pool-manager'
+import { AI_MAX_ROWS, AI_TIMEOUT_MS } from '@shared/constants/defaults'
 
 function getApiKey(key: string): string | null {
   const db = getAppDb()
@@ -122,14 +123,15 @@ export function registerAiIpc(): void {
           window.webContents.send(IPC.AI_CHAT_STREAM, { type: 'sql_executing', content: sqlGenerated, messageId: assistantMsgId })
 
           try {
-            const queryResult = await adapter.execute(sqlGenerated)
+            const queryResult = await adapter.execute(sqlGenerated, { maxRows: AI_MAX_ROWS, timeoutMs: AI_TIMEOUT_MS })
             // Format results for AI
-            const resultRows = queryResult.rows.slice(0, 50)
+            const resultRows = queryResult.rows
+            const truncatedNote = queryResult.truncated ? ` (results truncated to ${AI_MAX_ROWS} rows)` : ''
             const resultsText = queryResult.error
               ? `Error: ${queryResult.error}`
-              : `${queryResult.rowCount} rows returned.\nColumns: ${queryResult.columns.map((c) => c.name).join(', ')}\n\nData:\n${JSON.stringify(resultRows, null, 2)}`
+              : `${queryResult.rowCount} rows returned${truncatedNote}.\nColumns: ${queryResult.columns.map((c) => c.name).join(', ')}\n\nData:\n${JSON.stringify(resultRows, null, 2)}`
 
-            sqlResults = JSON.stringify({ columns: queryResult.columns.map(c => c.name), rows: resultRows })
+            sqlResults = JSON.stringify({ columns: queryResult.columns.map(c => c.name), rows: resultRows, truncated: queryResult.truncated ?? false })
 
             // Pass 2: Feed results to AI for natural language summary
             const pass2Messages: AiProviderMessage[] = [

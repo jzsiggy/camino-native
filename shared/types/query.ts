@@ -5,6 +5,8 @@ export interface QueryResult {
   affectedRows?: number
   executionTime: number
   error?: string
+  truncated?: boolean
+  cancelled?: boolean
 }
 
 export interface ColumnInfo {
@@ -16,4 +18,12 @@ export interface QueryRequest {
   connectionId: string
   sql: string
   maxRows?: number
+  timeoutMs?: number
+  queryId?: string
+}
+
+export interface ExecuteOptions {
+  maxRows?: number
+  timeoutMs?: number
+  queryId?: string
 }

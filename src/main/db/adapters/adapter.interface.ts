@@ -1,4 +1,4 @@
-import type { QueryResult } from '@shared/types/query'
+import type { QueryResult, ExecuteOptions } from '@shared/types/query'
 import type { DatabaseSchema, ColumnDetail } from '@shared/types/schema'
 
 export interface DatabaseAdapter {
@@ -12,7 +12,10 @@ export interface DatabaseAdapter {
   disconnect(): Promise<void>
 
   /** Execute a SQL query */
-  execute(sql: string, maxRows?: number): Promise<QueryResult>
+  execute(sql: string, options?: ExecuteOptions): Promise<QueryResult>
+
+  /** Cancel a running query */
+  cancelQuery(queryId: string): Promise<void>
 
   /** Get list of databases (where applicable) */
   getDatabases(): Promise<string[]>

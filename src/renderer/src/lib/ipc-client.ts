@@ -37,7 +37,8 @@ export const schemaApi = {
 
 // Query API
 export const queryApi = {
-  execute: (request: QueryRequest) => invoke<QueryResult>(IPC.QUERY_EXECUTE, request)
+  execute: (request: QueryRequest) => invoke<QueryResult>(IPC.QUERY_EXECUTE, request),
+  cancel: (connectionId: string, queryId: string) => invoke<{ success: boolean }>(IPC.QUERY_CANCEL, connectionId, queryId)
 }
 
 // AI API

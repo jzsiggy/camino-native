@@ -1,13 +1,15 @@
 import mysql from 'mysql2/promise'
-import type { Pool, PoolOptions } from 'mysql2/promise'
+import type { Pool, PoolOptions, PoolConnection } from 'mysql2/promise'
 import type { DatabaseAdapter } from './adapter.interface'
-import type { QueryResult } from '@shared/types/query'
+import type { QueryResult, ExecuteOptions } from '@shared/types/query'
 import type { DatabaseSchema, ColumnDetail } from '@shared/types/schema'
 import type { ConnectionConfig } from '@shared/types/connection'
+import { addLimitIfNeeded } from './query-utils'
 
 export class MysqlAdapter implements DatabaseAdapter {
   private pool: Pool | null = null
   private config: ConnectionConfig
+  private activeQueries = new Map<string, { connection: PoolConnection; threadId: number }>()
 
   constructor(config: ConnectionConfig) {
     this.config = config
@@ -54,15 +56,36 @@ export class MysqlAdapter implements DatabaseAdapter {
     return this.pool !== null
   }
 
-  async execute(sql: string, maxRows?: number): Promise<QueryResult> {
+  async execute(sql: string, options?: ExecuteOptions): Promise<QueryResult> {
     if (!this.pool) throw new Error('Not connected')
     const start = Date.now()
+    const maxRows = options?.maxRows
+    const timeoutMs = options?.timeoutMs
+    const queryId = options?.queryId
+
+    const connection = await this.pool.getConnection()
     try {
-      const [rows, fields] = await this.pool.query(sql)
+      // Track for cancellation
+      if (queryId) {
+        this.activeQueries.set(queryId, { connection, threadId: connection.threadId! })
+      }
+
+      // Add server-side LIMIT for SELECT queries
+      const { sql: limitedSql, limitApplied } = addLimitIfNeeded(sql, maxRows)
+
+      const queryOpts: { sql: string; timeout?: number } = { sql: limitedSql }
+      if (timeoutMs) queryOpts.timeout = timeoutMs
+
+      const [rows, fields] = await connection.query(queryOpts)
       const resultRows = Array.isArray(rows) ? rows : []
-      const limited = maxRows
-        ? (resultRows as Record<string, unknown>[]).slice(0, maxRows)
-        : (resultRows as Record<string, unknown>[])
+      let limited = resultRows as Record<string, unknown>[]
+      let truncated = false
+
+      if (maxRows && limitApplied && limited.length > maxRows) {
+        limited = limited.slice(0, maxRows)
+        truncated = true
+      }
+
       const columns = (fields && Array.isArray(fields))
         ? fields.map((f) => ({ name: f.name, dataType: String(f.type) }))
         : []
@@ -70,16 +93,34 @@ export class MysqlAdapter implements DatabaseAdapter {
         columns,
         rows: limited,
         rowCount: limited.length,
-        executionTime: Date.now() - start
+        executionTime: Date.now() - start,
+        truncated
       }
     } catch (err) {
+      const message = (err as Error).message
+      const cancelled = message.includes('KILL') || (err as NodeJS.ErrnoException).code === 'PROTOCOL_SEQUENCE_TIMEOUT'
       return {
         columns: [],
         rows: [],
         rowCount: 0,
         executionTime: Date.now() - start,
-        error: (err as Error).message
+        error: message,
+        cancelled
       }
+    } finally {
+      if (queryId) this.activeQueries.delete(queryId)
+      connection.release()
+    }
+  }
+
+  async cancelQuery(queryId: string): Promise<void> {
+    const entry = this.activeQueries.get(queryId)
+    if (!entry || !this.pool) return
+    const conn = await this.pool.getConnection()
+    try {
+      await conn.query(`KILL QUERY ${entry.threadId}`)
+    } finally {
+      conn.release()
     }
   }
 
