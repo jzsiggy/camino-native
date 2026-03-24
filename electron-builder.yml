@@ -1,7 +1,10 @@
 appId: com.camino.app
 productName: Camino
+icon: resources/icon.png
 directories:
   buildResources: resources
+publish:
+  provider: github
 files:
   - '!**/.vscode/*'
   - '!src/*'
