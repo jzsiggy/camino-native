@@ -40,7 +40,7 @@ jobs:
         run: npm ci
 
       - name: Build and package
-        run: npm run package -- --publish never ${{ matrix.arch && format('--{0} --arch {1}', matrix.platform, matrix.arch) || '' }}
+        run: npm run package -- --publish never ${{ matrix.arch && format('--{0} --{1}', matrix.platform, matrix.arch) || '' }}
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
