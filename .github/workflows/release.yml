@@ -15,6 +15,10 @@ jobs:
         include:
           - os: macos-latest
             platform: mac
+            arch: arm64
+          - os: macos-latest
+            platform: mac
+            arch: x64
           - os: ubuntu-latest
             platform: linux
           - os: windows-latest
@@ -36,7 +40,7 @@ jobs:
         run: npm ci
 
       - name: Build and package
-        run: npm run package -- --publish never
+        run: npm run package -- --publish never ${{ matrix.arch && format('--{0} --arch {1}', matrix.platform, matrix.arch) || '' }}
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
