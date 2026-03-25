@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camino — AI-Powered Database Management</title>
+  <meta name="description" content="Connect to PostgreSQL, MySQL, and SQLite. Write SQL with a professional editor. Let AI generate queries from natural language.">
+  <meta property="og:title" content="Camino — AI-Powered Database Management">
+  <meta property="og:description" content="Connect to PostgreSQL, MySQL, and SQLite. Write SQL with a professional editor. Let AI generate queries from natural language.">
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ========== CSS Variables ========== */
+    :root {
+      --crust: #11111b;
+      --base: #181825;
+      --surface: #1e1e2e;
+      --surface1: #313244;
+      --surface2: #45475a;
+      --overlay: #585b70;
+      --text: #cdd6f4;
+      --subtext: #a6adc8;
+      --blue: #89b4fa;
+      --sapphire: #74c7ec;
+      --green: #a6e3a1;
+      --red: #f38ba8;
+      --peach: #fab387;
+      --mauve: #cba6f7;
+      --teal: #94e2d5;
+      --yellow: #f9e2af;
+      --nav-height: 64px;
+      --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', "SF Mono", "Fira Code", "Cascadia Code", monospace;
+    }
+
+    /* ========== Reset & Base ========== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--base);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ========== Utility ========== */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ========== Scroll Reveal ========== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ========== Navigation ========== */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-height);
+      z-index: 1000;
+      background: rgba(17, 17, 27, 0.75);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border-bottom: 1px solid rgba(49, 50, 68, 0.5);
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .nav.scrolled {
+      background: rgba(17, 17, 27, 0.92);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-brand img {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+    .nav-brand span {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: -0.02em;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--subtext);
+      transition: color 0.25s;
+      letter-spacing: 0.01em;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 20px;
+      background: var(--blue);
+      color: var(--crust) !important;
+      font-weight: 600 !important;
+      border-radius: 100px;
+      font-size: 13px !important;
+      transition: background 0.25s, transform 0.25s, box-shadow 0.25s;
+    }
+    .nav-cta:hover {
+      background: var(--sapphire);
+      color: var(--crust) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(137, 180, 250, 0.3);
+    }
+
+    /* Hamburger */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      padding: 4px;
+      background: none;
+      border: none;
+      z-index: 1001;
+    }
+    .hamburger span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+    .hamburger.active span:nth-child(2) { opacity: 0; }
+    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 17, 27, 0.97);
+      backdrop-filter: blur(30px);
+      z-index: 999;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--subtext);
+      transition: color 0.25s;
+    }
+    .mobile-menu a:hover { color: var(--blue); }
+
+    /* ========== Hero ========== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: calc(var(--nav-height) + 40px) 24px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Ambient glow behind hero */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse, rgba(137, 180, 250, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Subtle grid pattern */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(49, 50, 68, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(49, 50, 68, 0.15) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent);
+      -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-icon {
+      width: 88px;
+      height: 88px;
+      margin-bottom: 32px;
+      position: relative;
+      animation: iconGlow 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 30px rgba(137, 180, 250, 0.15));
+    }
+
+    @keyframes iconGlow {
+      0%, 100% { filter: drop-shadow(0 0 30px rgba(137, 180, 250, 0.15)) drop-shadow(0 0 60px rgba(137, 180, 250, 0.05)); }
+      50% { filter: drop-shadow(0 0 50px rgba(137, 180, 250, 0.3)) drop-shadow(0 0 100px rgba(137, 180, 250, 0.1)); }
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 6vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+    .hero h1 .accent { color: var(--blue); }
+
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--subtext);
+      max-width: 580px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    .hero-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: var(--blue);
+      color: var(--crust);
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-primary:hover {
+      background: var(--sapphire);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(137, 180, 250, 0.3);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: transparent;
+      color: var(--blue);
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 12px;
+      border: 1.5px solid var(--surface1);
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-secondary:hover {
+      border-color: var(--blue);
+      background: rgba(137, 180, 250, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .hero-platforms {
+      font-size: 13px;
+      color: var(--overlay);
+      margin-bottom: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    .hero-platforms .platform {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ========== Mock App Window ========== */
+    .mock-window-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      perspective: 1200px;
+    }
+
+    .mock-window {
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--surface1);
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(137, 180, 250, 0.05),
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 100px rgba(137, 180, 250, 0.06);
+      transform: rotateX(2deg);
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: windowFadeIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+    }
+
+    @keyframes windowFadeIn {
+      from {
+        opacity: 0;
+        transform: rotateX(8deg) translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: rotateX(2deg) translateY(0);
+      }
+    }
+
+    .mock-titlebar {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--crust);
+      border-bottom: 1px solid var(--surface1);
+      gap: 8px;
+    }
+    .mock-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .mock-dot.red { background: #f38ba8; }
+    .mock-dot.yellow { background: #f9e2af; }
+    .mock-dot.green { background: #a6e3a1; }
+    .mock-titlebar-text {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--overlay);
+      font-family: var(--font-display);
+      font-weight: 500;
+    }
+
+    .mock-body {
+      display: flex;
+      min-height: 320px;
+    }
+
+    .mock-sidebar {
+      width: 200px;
+      background: var(--surface);
+      border-right: 1px solid var(--surface1);
+      padding: 12px 0;
+      flex-shrink: 0;
+    }
+    .mock-sidebar-header {
+      padding: 4px 14px 10px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--overlay);
+    }
+    .mock-sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--subtext);
+      font-family: var(--font-body);
+    }
+    .mock-sidebar-item.active {
+      background: rgba(137, 180, 250, 0.08);
+      color: var(--blue);
+    }
+    .mock-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--overlay);
+      flex-shrink: 0;
+    }
+    .mock-status-dot.connected { background: var(--green); }
+
+    .mock-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--base);
+    }
+
+    .mock-editor {
+      flex: 1;
+      padding: 16px 20px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .mock-editor .kw { color: var(--mauve); font-weight: 500; }
+    .mock-editor .fn { color: var(--blue); }
+    .mock-editor .str { color: var(--green); }
+    .mock-editor .num { color: var(--peach); }
+    .mock-editor .col { color: var(--text); }
+    .mock-editor .tbl { color: var(--teal); }
+    .mock-editor .cmt { color: var(--overlay); font-style: italic; }
+    .mock-editor .line-num {
+      display: inline-block;
+      width: 28px;
+      color: var(--surface2);
+      text-align: right;
+      margin-right: 16px;
+      user-select: none;
+    }
+
+    .mock-results {
+      border-top: 1px solid var(--surface1);
+      background: var(--crust);
+    }
+    .mock-results-header {
+      padding: 6px 16px;
+      font-size: 11px;
+      color: var(--overlay);
+      border-bottom: 1px solid var(--surface1);
+      font-family: var(--font-display);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mock-results-header .badge {
+      background: rgba(166, 227, 161, 0.12);
+      color: var(--green);
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+    }
+    .mock-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: var(--font-mono);
+    }
+    .mock-table th {
+      text-align: left;
+      padding: 6px 16px;
+      color: var(--overlay);
+      font-weight: 500;
+      border-bottom: 1px solid var(--surface1);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .mock-table td {
+      padding: 5px 16px;
+      color: var(--subtext);
+      border-bottom: 1px solid rgba(49, 50, 68, 0.3);
+    }
+
+    /* ========== Section Headers ========== */
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--blue);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 17px;
+      color: var(--subtext);
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    /* ========== Features ========== */
+    .features {
+      padding: 120px 0;
+      position: relative;
+    }
+    .features-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .features-header .section-desc {
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--surface1);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--blue), transparent);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .feature-card:hover {
+      border-color: rgba(137, 180, 250, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+    .feature-card:hover::before { opacity: 0.6; }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(137, 180, 250, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .feature-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .feature-card h3 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--subtext);
+      line-height: 1.65;
+      margin-bottom: 24px;
+    }
+
+    /* Feature Visuals */
+    .feature-visual {
+      background: var(--base);
+      border: 1px solid var(--surface1);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    /* DB icons visual */
+    .db-visual {
+      padding: 24px 24px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      position: relative;
+    }
+    .db-icon-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+    }
+    .db-icon-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid var(--surface1);
+      transition: border-color 0.3s;
+    }
+    .db-icon-circle svg { width: 22px; height: 22px; }
+    .db-icon-label {
+      font-size: 11px;
+      color: var(--overlay);
+      font-weight: 500;
+      position: absolute;
+      top: 100%;
+      margin-top: 8px;
+      white-space: nowrap;
+    }
+
+    /* SQL typing visual */
+    .sql-visual {
+      padding: 16px 20px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.8;
+      min-height: 100px;
+    }
+    .sql-visual .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 15px;
+      background: var(--blue);
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    /* Chat visual */
+    .chat-visual {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .chat-msg {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .chat-msg.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .chat-msg.user {
+      align-self: flex-end;
+      background: rgba(137, 180, 250, 0.12);
+      color: var(--text);
+    }
+    .chat-msg.assistant {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--subtext);
+    }
+    .chat-msg code {
+      display: block;
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: var(--crust);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* Chart visual */
+    .chart-visual {
+      padding: 20px 24px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 12px;
+      height: 140px;
+    }
+    .chart-bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .chart-bar {
+      width: 36px;
+      border-radius: 4px 4px 0 0;
+      transition: height 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .chart-label {
+      font-size: 10px;
+      color: var(--overlay);
+      font-family: var(--font-mono);
+    }
+
+    /* ========== Chat Carousel ========== */
+    .chat-carousel {
+      padding: 120px 0;
+      background: var(--crust);
+      overflow: hidden;
+      position: relative;
+    }
+    .chat-carousel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(137, 180, 250, 0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+    .carousel-header {
+      text-align: center;
+      margin-bottom: 48px;
+      position: relative;
+    }
+    .carousel-header .section-desc { margin: 0 auto; }
+
+    .carousel-wrapper {
+      position: relative;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 60px;
+    }
+
+    .carousel-track {
+      display: flex;
+      gap: 24px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      padding: 8px 0 24px;
+      scrollbar-width: none;
+      mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent);
+    }
+    .carousel-track::-webkit-scrollbar { display: none; }
+
+    .carousel-card {
+      flex: 0 0 380px;
+      scroll-snap-align: center;
+      background: var(--surface);
+      border: 1px solid var(--surface1);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .carousel-card:hover {
+      border-color: rgba(137, 180, 250, 0.2);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    }
+
+    .carousel-card-chrome {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      background: var(--crust);
+      border-bottom: 1px solid var(--surface1);
+    }
+    .carousel-card-chrome .mini-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .carousel-card-chrome .mini-dot.r { background: var(--red); }
+    .carousel-card-chrome .mini-dot.y { background: var(--yellow); }
+    .carousel-card-chrome .mini-dot.g { background: var(--green); }
+    .carousel-card-chrome .chrome-label {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      color: var(--overlay);
+      font-family: var(--font-display);
+      font-weight: 500;
+    }
+
+    .carousel-messages {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 220px;
+    }
+
+    .c-msg {
+      max-width: 90%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .c-msg.user {
+      align-self: flex-end;
+      background: rgba(137, 180, 250, 0.12);
+      color: var(--text);
+    }
+    .c-msg.ai {
+      align-self: flex-start;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--subtext);
+    }
+    .c-msg code {
+      display: block;
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: var(--crust);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+    .c-msg .result-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      padding: 4px 10px;
+      background: rgba(166, 227, 161, 0.1);
+      border: 1px solid rgba(166, 227, 161, 0.2);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--green);
+    }
+
+    .c-msg .inline-chart {
+      margin-top: 10px;
+      background: var(--crust);
+      border-radius: 8px;
+      padding: 14px 16px 8px;
+      overflow: hidden;
+    }
+    .c-msg .mini-bars {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+      gap: 6px;
+      height: 80px;
+    }
+    .c-msg .mini-bar-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .c-msg .mini-bar {
+      width: 100%;
+      border-radius: 3px 3px 0 0;
+      min-width: 12px;
+    }
+    .c-msg .mini-bar-label {
+      font-size: 9px;
+      color: var(--overlay);
+      font-family: var(--font-mono);
+      padding-top: 4px;
+      line-height: 1;
+    }
+    .c-msg .mini-line-chart {
+      height: 64px;
+      position: relative;
+    }
+    .c-msg .mini-line-chart svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .c-msg .mini-line-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+
+    .carousel-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--surface1);
+      color: var(--subtext);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: all 0.25s;
+    }
+    .carousel-arrow:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: rgba(137, 180, 250, 0.08);
+    }
+    .carousel-arrow.left { left: 8px; }
+    .carousel-arrow.right { right: 8px; }
+
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .carousel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--surface1);
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s;
+      padding: 0;
+    }
+    .carousel-dot.active {
+      background: var(--blue);
+      transform: scale(1.3);
+    }
+
+    @media (max-width: 768px) {
+      .carousel-wrapper { padding: 0 24px; }
+      .carousel-card { flex: 0 0 calc(100vw - 64px); }
+      .carousel-arrow { display: none; }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .carousel-card { flex: 0 0 340px; }
+    }
+
+    /* ========== How It Works ========== */
+    .how-it-works {
+      padding: 120px 0;
+      background: var(--crust);
+      position: relative;
+    }
+    .how-it-works::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(rgba(137, 180, 250, 0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+    }
+    .how-header {
+      text-align: center;
+      margin-bottom: 80px;
+      position: relative;
+    }
+    .how-header .section-desc {
+      margin: 0 auto;
+    }
+
+    .timeline {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .timeline-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      padding: 0 20px;
+    }
+
+    .timeline-number {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(137, 180, 250, 0.1);
+      border: 2px solid var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--blue);
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+
+    .timeline-step h3 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .timeline-step p {
+      font-size: 14px;
+      color: var(--subtext);
+      line-height: 1.6;
+      max-width: 240px;
+    }
+
+    /* ========== Databases Banner ========== */
+    .databases {
+      padding: 100px 0;
+      text-align: center;
+    }
+    .databases .section-label {
+      margin-bottom: 48px;
+    }
+    .db-row {
+      display: flex;
+      justify-content: center;
+      gap: 80px;
+      flex-wrap: wrap;
+    }
+    .db-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .db-item-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      background: rgba(137, 180, 250, 0.06);
+      border: 1px solid var(--surface1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    .db-item-icon:hover {
+      border-color: var(--blue);
+      background: rgba(137, 180, 250, 0.1);
+      transform: translateY(-4px);
+    }
+    .db-item-icon svg { width: 36px; height: 36px; }
+    .db-item-name {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--subtext);
+    }
+
+    /* ========== Download CTA ========== */
+    .download-cta {
+      padding: 120px 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .download-cta::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(137, 180, 250, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .download-cta h2 {
+      font-family: var(--font-display);
+      font-size: clamp(32px, 4vw, 48px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .download-cta .sub {
+      font-size: 17px;
+      color: var(--subtext);
+      margin-bottom: 40px;
+    }
+    .download-cta .btn-primary {
+      padding: 18px 40px;
+      font-size: 18px;
+      border-radius: 14px;
+    }
+
+    /* ========== Footer ========== */
+    .footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--surface1);
+      text-align: center;
+    }
+    .footer-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+    .footer-links a {
+      font-size: 13px;
+      color: var(--subtext);
+      transition: color 0.25s;
+    }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-copy {
+      font-size: 12px;
+      color: var(--overlay);
+    }
+
+    /* ========== Responsive ========== */
+    @media (max-width: 1024px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+
+      .hero { padding-top: calc(var(--nav-height) + 20px); min-height: auto; padding-bottom: 40px; }
+      .hero h1 { font-size: 36px; }
+      .hero-sub { font-size: 15px; }
+      .hero-platforms { flex-direction: column; gap: 8px; }
+
+      .mock-sidebar { width: 140px; }
+      .mock-body { min-height: 240px; }
+      .mock-editor { font-size: 11px; padding: 12px; }
+      .mock-table { font-size: 10px; }
+
+      .features-grid { grid-template-columns: 1fr; }
+      .feature-card { padding: 24px; }
+
+      .db-visual { gap: 20px; padding: 20px 12px 44px; }
+      .db-icon-circle { width: 40px; height: 40px; }
+      .db-icon-circle svg { width: 18px; height: 18px; }
+      .db-icon-label { font-size: 10px; }
+
+      .chart-visual { height: auto; min-height: 100px; padding: 16px; gap: 8px; }
+      .chart-bar { width: 28px; }
+
+      .timeline { flex-direction: column; gap: 48px; }
+
+      .db-row { gap: 40px; }
+    }
+
+    @media (max-width: 480px) {
+      .hero-buttons { flex-direction: column; width: 100%; }
+      .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+      .mock-sidebar { display: none; }
+    }
+
+    /* ========== Reduced motion ========== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .reveal { opacity: 1; transform: none; }
+      .mock-window { animation: none; transform: none; }
+      .chat-msg { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== NAV ===== -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="icon.png" alt="Camino">
+        <span>Camino</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#download" class="nav-cta">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </a></li>
+      </ul>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#features" class="mobile-nav-link">Features</a>
+    <a href="#how-it-works" class="mobile-nav-link">How It Works</a>
+    <a href="#databases" class="mobile-nav-link">Databases</a>
+    <a href="#download" class="mobile-nav-link">Download</a>
+  </div>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="hero">
+    <div class="hero-content">
+      <img src="icon.png" alt="Camino icon" class="hero-icon">
+      <h1>Your database,<br><span class="accent">powered by AI</span></h1>
+      <p class="hero-sub">Connect to PostgreSQL, MySQL, and SQLite. Write SQL with an intelligent editor. Let AI do the heavy lifting.</p>
+      <div class="hero-buttons">
+        <a href="https://github.com/jzsiggy/camino-native/releases" class="btn-primary" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download for Free
+        </a>
+        <a href="https://github.com/jzsiggy/camino-native" class="btn-secondary" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+      <div class="hero-platforms">
+        <span class="platform">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83"/><path d="M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11"/></svg>
+          macOS
+        </span>
+        <span class="platform">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.548l7.152-1.032.007 6.894-7.15.04L3 5.548zm7.14 6.712l.01 6.904-7.14-1.021-.001-5.932 7.131.049zm.86-7.863L21.92 3v8.35l-10.92.078V4.397zm10.92 7.77L21.917 21l-10.936-1.543-.016-7.343 10.955.053z"/></svg>
+          Windows
+        </span>
+        <span class="platform">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.424.424 0 00-.11.135c-.26.268-.45.6-.663.839-.199.199-.485.267-.797.4-.313.136-.658.269-.864.68-.09.189-.136.394-.132.602 0 .199.027.4.055.536.058.399.116.728.04.97-.249.68-.28 1.145-.106 1.484.174.334.535.47.94.601.81.2 1.91.135 2.774.6.926.466 1.866.67 2.616.47.526-.116.97-.464 1.208-.946.587-.003 1.23-.269 2.26-.334.699-.058 1.574.267 2.577.2.025.134.063.198.114.333l.003.003c.391.778 1.113 1.368 1.884 1.43.868.07 1.723-.457 2.473-1.168l-.003.003c.233.018.433-.08.63-.24.197-.16.357-.354.49-.46.132-.1.28-.168.413-.17 1.023-.021 1.957-.277 2.469-.975.512-.696.39-1.655-.302-2.644-.06-.088-.122-.166-.195-.24a2.11 2.11 0 00.134-.667c.075-1.322-.543-2.64-1.299-3.553-.39-.469-.855-.876-1.373-1.207.242-.655.336-1.357.241-2.036-.165-1.204-.677-2.312-1.497-3.153-.82-.841-1.894-1.407-3.11-1.567-1.216-.16-2.472.121-3.492.83-.543.371-1.022.834-1.405 1.378-.232.305-.441.628-.618.975-.175.347-.308.72-.398 1.107-.164-.006-.329-.009-.496-.009-2.084 0-3.866.925-4.56 2.295z"/></svg>
+          Linux
+        </span>
+      </div>
+    </div>
+
+    <!-- Mock App Window -->
+    <div class="mock-window-wrapper reveal">
+      <div class="mock-window" id="mockWindow">
+        <div class="mock-titlebar">
+          <div class="mock-dot red"></div>
+          <div class="mock-dot yellow"></div>
+          <div class="mock-dot green"></div>
+          <span class="mock-titlebar-text">Camino &mdash; analytics_db</span>
+        </div>
+        <div class="mock-body">
+          <div class="mock-sidebar">
+            <div class="mock-sidebar-header">Connections</div>
+            <div class="mock-sidebar-item active">
+              <span class="mock-status-dot connected"></span>
+              analytics_db
+            </div>
+            <div class="mock-sidebar-item">
+              <span class="mock-status-dot connected"></span>
+              production_pg
+            </div>
+            <div class="mock-sidebar-item">
+              <span class="mock-status-dot"></span>
+              staging_mysql
+            </div>
+            <div class="mock-sidebar-header" style="margin-top: 12px;">Scripts</div>
+            <div class="mock-sidebar-item active" style="padding-left: 20px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              revenue_report.sql
+            </div>
+            <div class="mock-sidebar-item" style="padding-left: 20px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              user_metrics.sql
+            </div>
+          </div>
+          <div class="mock-main">
+            <div class="mock-editor">
+              <div><span class="line-num">1</span><span class="cmt">-- Monthly revenue breakdown</span></div>
+              <div><span class="line-num">2</span><span class="kw">SELECT</span></div>
+              <div><span class="line-num">3</span>&nbsp;&nbsp;<span class="fn">date_trunc</span>(<span class="str">'month'</span>, <span class="col">created_at</span>) <span class="kw">AS</span> <span class="col">month</span>,</div>
+              <div><span class="line-num">4</span>&nbsp;&nbsp;<span class="fn">SUM</span>(<span class="col">amount</span>) <span class="kw">AS</span> <span class="col">revenue</span>,</div>
+              <div><span class="line-num">5</span>&nbsp;&nbsp;<span class="fn">COUNT</span>(*) <span class="kw">AS</span> <span class="col">orders</span></div>
+              <div><span class="line-num">6</span><span class="kw">FROM</span> <span class="tbl">transactions</span></div>
+              <div><span class="line-num">7</span><span class="kw">WHERE</span> <span class="col">status</span> = <span class="str">'completed'</span></div>
+              <div><span class="line-num">8</span><span class="kw">GROUP BY</span> <span class="num">1</span> <span class="kw">ORDER BY</span> <span class="num">1</span> <span class="kw">DESC</span></div>
+              <div><span class="line-num">9</span><span class="kw">LIMIT</span> <span class="num">12</span>;</div>
+            </div>
+            <div class="mock-results">
+              <div class="mock-results-header">
+                Results <span class="badge">128 rows &middot; 24ms</span>
+              </div>
+              <table class="mock-table">
+                <thead>
+                  <tr>
+                    <th>month</th>
+                    <th>revenue</th>
+                    <th>orders</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>2025-03-01</td><td style="color: var(--green)">$284,920</td><td>1,847</td></tr>
+                  <tr><td>2025-02-01</td><td style="color: var(--green)">$261,330</td><td>1,692</td></tr>
+                  <tr><td>2025-01-01</td><td style="color: var(--green)">$243,105</td><td>1,534</td></tr>
+                  <tr><td>2024-12-01</td><td style="color: var(--green)">$298,440</td><td>2,103</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURES ===== -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="features-header reveal">
+        <div class="section-label">Features</div>
+        <h2 class="section-title">Everything you need</h2>
+        <p class="section-desc">A focused toolkit for exploring, querying, and understanding your data.</p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Multi-DB -->
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+              <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+            </svg>
+          </div>
+          <h3>Multi-Database Support</h3>
+          <p>Connect to PostgreSQL, MySQL, and SQLite databases. Browse schemas, tables, and columns in a visual tree.</p>
+          <div class="feature-visual">
+            <div class="db-visual">
+              <div class="db-icon-group">
+                <div class="db-icon-circle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6"/><path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>
+                </div>
+                <span class="db-icon-label">PostgreSQL</span>
+              </div>
+              <div class="db-icon-group">
+                <div class="db-icon-circle" style="border-color: var(--peach);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--peach)" stroke-width="1.5"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6"/><path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>
+                </div>
+                <span class="db-icon-label">MySQL</span>
+              </div>
+              <div class="db-icon-group">
+                <div class="db-icon-circle" style="border-color: var(--teal);">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.5"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.66 3.58 3 8 3s8-1.34 8-3V6"/><path d="M4 12v6c0 1.66 3.58 3 8 3s8-1.34 8-3v-6"/></svg>
+                </div>
+                <span class="db-icon-label">SQLite</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SQL Editor -->
+        <div class="feature-card reveal" style="transition-delay: 0.1s;">
+          <div class="feature-icon" style="background: rgba(203, 166, 247, 0.08);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--mauve)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+          </div>
+          <h3>SQL Editor</h3>
+          <p>Professional-grade SQL editing with syntax highlighting, auto-completion, and multi-statement execution.</p>
+          <div class="feature-visual">
+            <div class="sql-visual" id="sqlTyping">
+              <span class="cursor"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Chat -->
+        <div class="feature-card reveal" style="transition-delay: 0.15s;">
+          <div class="feature-icon" style="background: rgba(166, 227, 161, 0.08);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.522 4.814 3.889 6.17L5.5 21l3.97-2.203c.82.18 1.671.276 2.53.276 4.97 0 9-3.186 9-7.115C21 8.185 16.97 5 12 5"/>
+              <path d="M9 11l2 2 4-4" stroke-width="2"/>
+            </svg>
+          </div>
+          <h3>AI Chat Interface</h3>
+          <p>Ask questions in plain English. AI generates SQL, executes it, and explains results in a conversational flow.</p>
+          <div class="feature-visual">
+            <div class="chat-visual" id="chatVisual">
+              <div class="chat-msg user" id="chatUser">Show me the top 5 customers by revenue</div>
+              <div class="chat-msg assistant" id="chatAssistant">
+                Here are your top customers by total revenue:
+                <code><span style="color: var(--mauve)">SELECT</span> name, <span style="color: var(--blue)">SUM</span>(amount) <span style="color: var(--mauve)">AS</span> total
+<span style="color: var(--mauve)">FROM</span> <span style="color: var(--teal)">customers</span>
+<span style="color: var(--mauve)">JOIN</span> <span style="color: var(--teal)">orders</span> <span style="color: var(--mauve)">USING</span>(customer_id)
+<span style="color: var(--mauve)">GROUP BY</span> name <span style="color: var(--mauve)">ORDER BY</span> total <span style="color: var(--mauve)">DESC</span>
+<span style="color: var(--mauve)">LIMIT</span> <span style="color: var(--peach)">5</span>;</code>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Visualization -->
+        <div class="feature-card reveal" style="transition-delay: 0.2s;">
+          <div class="feature-icon" style="background: rgba(250, 179, 135, 0.08);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--peach)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="12" width="4" height="9" rx="1"/>
+              <rect x="10" y="7" width="4" height="14" rx="1"/>
+              <rect x="17" y="3" width="4" height="18" rx="1"/>
+            </svg>
+          </div>
+          <h3>Data Visualization</h3>
+          <p>Instantly visualize query results with charts. Bar charts, line graphs, and more built right in.</p>
+          <div class="feature-visual">
+            <div class="chart-visual" id="chartVisual">
+              <div class="chart-bar-group">
+                <div class="chart-bar" data-height="85" style="background: var(--blue); height: 0;"></div>
+                <span class="chart-label">Jan</span>
+              </div>
+              <div class="chart-bar-group">
+                <div class="chart-bar" data-height="62" style="background: var(--green); height: 0;"></div>
+                <span class="chart-label">Feb</span>
+              </div>
+              <div class="chart-bar-group">
+                <div class="chart-bar" data-height="95" style="background: var(--peach); height: 0;"></div>
+                <span class="chart-label">Mar</span>
+              </div>
+              <div class="chart-bar-group">
+                <div class="chart-bar" data-height="48" style="background: var(--red); height: 0;"></div>
+                <span class="chart-label">Apr</span>
+              </div>
+              <div class="chart-bar-group">
+                <div class="chart-bar" data-height="78" style="background: var(--mauve); height: 0;"></div>
+                <span class="chart-label">May</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CHAT CAROUSEL ===== -->
+  <section class="chat-carousel" id="ai-examples">
+    <div class="container">
+      <div class="carousel-header reveal">
+        <div class="section-label">AI in Action</div>
+        <h2 class="section-title">Ask anything about your data</h2>
+        <p class="section-desc">From revenue reports to schema exploration, Camino's AI understands your database and speaks your language.</p>
+      </div>
+    </div>
+
+    <div class="carousel-wrapper">
+      <button class="carousel-arrow left" id="carouselPrev" aria-label="Previous">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="carousel-arrow right" id="carouselNext" aria-label="Next">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+
+      <div class="carousel-track" id="carouselTrack">
+
+        <!-- Card 1: Revenue with bar chart -->
+        <div class="carousel-card">
+          <div class="carousel-card-chrome">
+            <span class="mini-dot r"></span><span class="mini-dot y"></span><span class="mini-dot g"></span>
+            <span class="chrome-label">AI Chat</span>
+          </div>
+          <div class="carousel-messages">
+            <div class="c-msg user">Show me revenue by quarter this year</div>
+            <div class="c-msg ai">
+              Here's revenue broken down by quarter:
+              <code><span style="color: var(--mauve)">SELECT</span> <span style="color: var(--blue)">date_trunc</span>(<span style="color: var(--green)">'quarter'</span>, created_at) <span style="color: var(--mauve)">AS</span> q,
+  <span style="color: var(--blue)">SUM</span>(amount) <span style="color: var(--mauve)">AS</span> revenue
+<span style="color: var(--mauve)">FROM</span> <span style="color: var(--teal)">orders</span>
+<span style="color: var(--mauve)">WHERE</span> status = <span style="color: var(--green)">'completed'</span>
+<span style="color: var(--mauve)">GROUP BY</span> <span style="color: var(--peach)">1</span> <span style="color: var(--mauve)">ORDER BY</span> <span style="color: var(--peach)">1</span>;</code>
+              <div class="inline-chart">
+                <div class="mini-bars">
+                  <div class="mini-bar-col"><div class="mini-bar" style="height: 38px; background: var(--blue);"></div><span class="mini-bar-label">Q1</span></div>
+                  <div class="mini-bar-col"><div class="mini-bar" style="height: 50px; background: var(--green);"></div><span class="mini-bar-label">Q2</span></div>
+                  <div class="mini-bar-col"><div class="mini-bar" style="height: 28px; background: var(--peach);"></div><span class="mini-bar-label">Q3</span></div>
+                  <div class="mini-bar-col"><div class="mini-bar" style="height: 58px; background: var(--mauve);"></div><span class="mini-bar-label">Q4</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Inactive Customers -->
+        <div class="carousel-card">
+          <div class="carousel-card-chrome">
+            <span class="mini-dot r"></span><span class="mini-dot y"></span><span class="mini-dot g"></span>
+            <span class="chrome-label">AI Chat</span>
+          </div>
+          <div class="carousel-messages">
+            <div class="c-msg user">Which customers haven't ordered in 90 days?</div>
+            <div class="c-msg ai">
+              I'll find customers with no recent orders:
+              <code><span style="color: var(--mauve)">SELECT</span> name, email,
+  <span style="color: var(--blue)">MAX</span>(order_date) <span style="color: var(--mauve)">AS</span> last_order
+<span style="color: var(--mauve)">FROM</span> <span style="color: var(--teal)">customers</span>
+<span style="color: var(--mauve)">JOIN</span> <span style="color: var(--teal)">orders</span> <span style="color: var(--mauve)">USING</span>(customer_id)
+<span style="color: var(--mauve)">GROUP BY</span> name, email
+<span style="color: var(--mauve)">HAVING</span> <span style="color: var(--blue)">MAX</span>(order_date) &lt; <span style="color: var(--blue)">NOW</span>() - <span style="color: var(--mauve)">INTERVAL</span> <span style="color: var(--green)">'90 days'</span>;</code>
+              <span class="result-pill">23 inactive customers</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Schema Exploration -->
+        <div class="carousel-card">
+          <div class="carousel-card-chrome">
+            <span class="mini-dot r"></span><span class="mini-dot y"></span><span class="mini-dot g"></span>
+            <span class="chrome-label">AI Chat</span>
+          </div>
+          <div class="carousel-messages">
+            <div class="c-msg user">What tables do I have and how are they related?</div>
+            <div class="c-msg ai">
+              Your database has 8 tables. Here are the key relationships:<br><br>
+              <strong style="color: var(--text)">users</strong> &rarr; <strong style="color: var(--text)">orders</strong> (one-to-many via user_id)<br>
+              <strong style="color: var(--text)">orders</strong> &rarr; <strong style="color: var(--text)">order_items</strong> (one-to-many via order_id)<br>
+              <strong style="color: var(--text)">products</strong> &rarr; <strong style="color: var(--text)">order_items</strong> (one-to-many via product_id)<br>
+              <strong style="color: var(--text)">products</strong> &rarr; <strong style="color: var(--text)">categories</strong> (many-to-one via category_id)
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Duplicates -->
+        <div class="carousel-card">
+          <div class="carousel-card-chrome">
+            <span class="mini-dot r"></span><span class="mini-dot y"></span><span class="mini-dot g"></span>
+            <span class="chrome-label">AI Chat</span>
+          </div>
+          <div class="carousel-messages">
+            <div class="c-msg user">Are there any duplicate emails in the users table?</div>
+            <div class="c-msg ai">
+              Let me check for duplicates:
+              <code><span style="color: var(--mauve)">SELECT</span> email, <span style="color: var(--blue)">COUNT</span>(*) <span style="color: var(--mauve)">AS</span> count
+<span style="color: var(--mauve)">FROM</span> <span style="color: var(--teal)">users</span>
+<span style="color: var(--mauve)">GROUP BY</span> email
+<span style="color: var(--mauve)">HAVING</span> <span style="color: var(--blue)">COUNT</span>(*) > <span style="color: var(--peach)">1</span>
+<span style="color: var(--mauve)">ORDER BY</span> count <span style="color: var(--mauve)">DESC</span>;</code>
+              <span class="result-pill">3 duplicate emails found</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5: Signups with line chart -->
+        <div class="carousel-card">
+          <div class="carousel-card-chrome">
+            <span class="mini-dot r"></span><span class="mini-dot y"></span><span class="mini-dot g"></span>
+            <span class="chrome-label">AI Chat</span>
+          </div>
+          <div class="carousel-messages">
+            <div class="c-msg user">Show me the signup trend over the past 6 months</div>
+            <div class="c-msg ai">
+              Here's your monthly signup trend:
+              <code><span style="color: var(--mauve)">SELECT</span> <span style="color: var(--blue)">date_trunc</span>(<span style="color: var(--green)">'month'</span>, created_at),
+  <span style="color: var(--blue)">COUNT</span>(*) <span style="color: var(--mauve)">AS</span> signups
+<span style="color: var(--mauve)">FROM</span> <span style="color: var(--teal)">users</span>
+<span style="color: var(--mauve)">WHERE</span> created_at >= <span style="color: var(--blue)">NOW</span>() - <span style="color: var(--green)">'6 months'</span>::<span style="color: var(--mauve)">interval</span>
+<span style="color: var(--mauve)">GROUP BY</span> <span style="color: var(--peach)">1</span> <span style="color: var(--mauve)">ORDER BY</span> <span style="color: var(--peach)">1</span>;</code>
+              <div class="inline-chart">
+                <div class="mini-line-chart">
+                  <svg viewBox="0 0 200 64" preserveAspectRatio="none">
+                    <polyline
+                      fill="none"
+                      stroke="var(--blue)"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      points="0,48 40,38 80,42 120,24 160,16 200,8"
+                    />
+                    <polyline
+                      fill="url(#lineGrad)"
+                      stroke="none"
+                      points="0,48 40,38 80,42 120,24 160,16 200,8 200,64 0,64"
+                    />
+                    <defs>
+                      <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--blue)" stop-opacity="0.2"/>
+                        <stop offset="100%" stop-color="var(--blue)" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="0" cy="48" r="3" fill="var(--blue)"/>
+                    <circle cx="40" cy="38" r="3" fill="var(--blue)"/>
+                    <circle cx="80" cy="42" r="3" fill="var(--blue)"/>
+                    <circle cx="120" cy="24" r="3" fill="var(--blue)"/>
+                    <circle cx="160" cy="16" r="3" fill="var(--blue)"/>
+                    <circle cx="200" cy="8" r="3" fill="var(--blue)"/>
+                  </svg>
+                </div>
+                <div class="mini-line-labels">
+                  <span class="mini-bar-label">Oct</span>
+                  <span class="mini-bar-label">Nov</span>
+                  <span class="mini-bar-label">Dec</span>
+                  <span class="mini-bar-label">Jan</span>
+                  <span class="mini-bar-label">Feb</span>
+                  <span class="mini-bar-label">Mar</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+  </section>
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="how-header reveal">
+        <div class="section-label">How It Works</div>
+        <h2 class="section-title">Up and running in minutes</h2>
+        <p class="section-desc">Three steps to smarter database workflows.</p>
+      </div>
+
+      <div class="timeline">
+        <div class="timeline-step reveal">
+          <div class="timeline-number">1</div>
+          <h3>Connect</h3>
+          <p>Add your database credentials. PostgreSQL, MySQL, and SQLite supported out of the box.</p>
+        </div>
+        <div class="timeline-step reveal" style="transition-delay: 0.15s;">
+          <div class="timeline-number">2</div>
+          <h3>Set Up AI</h3>
+          <p>Run the AI Setup Wizard. It introspects your schema and builds context so AI understands your data.</p>
+        </div>
+        <div class="timeline-step reveal" style="transition-delay: 0.3s;">
+          <div class="timeline-number">3</div>
+          <h3>Ask & Explore</h3>
+          <p>Write SQL or chat with AI. Get instant results, charts, and insights from your data.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DATABASES ===== -->
+  <section class="databases" id="databases">
+    <div class="container">
+      <div class="section-label reveal">Works With Your Database</div>
+      <div class="db-row">
+        <div class="db-item reveal">
+          <div class="db-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+              <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+              <path d="M3 8.5c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+              <path d="M3 15.5c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+            </svg>
+          </div>
+          <span class="db-item-name">PostgreSQL</span>
+        </div>
+        <div class="db-item reveal" style="transition-delay: 0.1s;">
+          <div class="db-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--peach)" stroke-width="1.2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+              <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+              <path d="M3 8.5c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+              <path d="M3 15.5c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+            </svg>
+          </div>
+          <span class="db-item-name">MySQL</span>
+        </div>
+        <div class="db-item reveal" style="transition-delay: 0.2s;">
+          <div class="db-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+              <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+              <path d="M3 8.5c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+              <path d="M3 15.5c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+            </svg>
+          </div>
+          <span class="db-item-name">SQLite</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DOWNLOAD CTA ===== -->
+  <section class="download-cta" id="download">
+    <div class="container reveal">
+      <h2>Ready to take Camino<br>for a spin?</h2>
+      <p class="sub">Free and open source. Download the latest release from GitHub.</p>
+      <a href="https://github.com/jzsiggy/camino-native/releases" class="btn-primary" target="_blank" rel="noopener">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download from GitHub
+      </a>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/jzsiggy/camino-native" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/jzsiggy/camino-native/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/jzsiggy/camino-native/issues" target="_blank" rel="noopener">Report an Issue</a>
+      </div>
+      <p class="footer-copy">&copy; 2025 Camino. Built with love.</p>
+    </div>
+  </footer>
+
+  <script>
+    // ===== Scroll Reveal =====
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    // ===== Nav scroll effect =====
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    // ===== Mobile menu =====
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    hamburger.addEventListener('click', () => {
+      hamburger.classList.toggle('active');
+      mobileMenu.classList.toggle('open');
+      document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+    });
+    document.querySelectorAll('.mobile-nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        hamburger.classList.remove('active');
+        mobileMenu.classList.remove('open');
+        document.body.style.overflow = '';
+      });
+    });
+
+    // ===== Smooth scroll for nav links =====
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', e => {
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // ===== SQL Typing Animation =====
+    const sqlLines = [
+      { tokens: [{ text: 'SELECT', cls: 'kw' }, { text: ' ' }, { text: 'name', cls: 'col' }, { text: ', ' }, { text: 'email', cls: 'col' }, { text: ', ' }, { text: 'SUM', cls: 'fn' }, { text: '(' }, { text: 'total', cls: 'col' }, { text: ')' }] },
+      { tokens: [{ text: 'FROM', cls: 'kw' }, { text: ' ' }, { text: 'customers', cls: 'tbl' }] },
+      { tokens: [{ text: 'JOIN', cls: 'kw' }, { text: ' ' }, { text: 'orders', cls: 'tbl' }, { text: ' ' }, { text: 'USING', cls: 'kw' }, { text: '(' }, { text: 'id', cls: 'col' }, { text: ')' }] },
+      { tokens: [{ text: 'GROUP BY', cls: 'kw' }, { text: ' ' }, { text: 'name', cls: 'col' }] },
+      { tokens: [{ text: 'LIMIT', cls: 'kw' }, { text: ' ' }, { text: '10', cls: 'num' }, { text: ';' }] }
+    ];
+
+    let sqlTypingStarted = false;
+    const sqlContainer = document.getElementById('sqlTyping');
+
+    function typeSQL() {
+      if (sqlTypingStarted) return;
+      sqlTypingStarted = true;
+      sqlContainer.innerHTML = '';
+
+      let lineIdx = 0, tokenIdx = 0, charIdx = 0;
+      const cursor = document.createElement('span');
+      cursor.className = 'cursor';
+
+      function typeNext() {
+        if (lineIdx >= sqlLines.length) {
+          sqlContainer.appendChild(cursor);
+          return;
+        }
+        const line = sqlLines[lineIdx];
+        if (tokenIdx === 0 && charIdx === 0) {
+          const lineEl = document.createElement('div');
+          lineEl.dataset.line = lineIdx;
+          sqlContainer.appendChild(lineEl);
+        }
+        const lineEl = sqlContainer.querySelector(`[data-line="${lineIdx}"]`);
+        const token = line.tokens[tokenIdx];
+        if (charIdx < token.text.length) {
+          // Remove cursor, add char, re-add cursor
+          if (cursor.parentNode) cursor.remove();
+          let span = lineEl.querySelector(`[data-t="${lineIdx}-${tokenIdx}"]`);
+          if (!span) {
+            span = document.createElement('span');
+            span.dataset.t = `${lineIdx}-${tokenIdx}`;
+            if (token.cls) span.className = token.cls;
+            lineEl.appendChild(span);
+          }
+          span.textContent += token.text[charIdx];
+          lineEl.appendChild(cursor);
+          charIdx++;
+          setTimeout(typeNext, 30 + Math.random() * 30);
+        } else {
+          charIdx = 0;
+          tokenIdx++;
+          if (tokenIdx >= line.tokens.length) {
+            tokenIdx = 0;
+            lineIdx++;
+            setTimeout(typeNext, 120);
+          } else {
+            typeNext();
+          }
+        }
+      }
+      typeNext();
+    }
+
+    const sqlObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          typeSQL();
+          sqlObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    sqlObserver.observe(sqlContainer);
+
+    // ===== Chat Animation =====
+    const chatVisual = document.getElementById('chatVisual');
+    const chatObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const msgs = chatVisual.querySelectorAll('.chat-msg');
+          msgs.forEach((msg, i) => {
+            setTimeout(() => msg.classList.add('visible'), i * 500);
+          });
+          chatObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    chatObserver.observe(chatVisual);
+
+    // ===== Chart Animation =====
+    const chartVisual = document.getElementById('chartVisual');
+    const chartObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const bars = chartVisual.querySelectorAll('.chart-bar');
+          bars.forEach((bar, i) => {
+            setTimeout(() => {
+              bar.style.height = bar.dataset.height + 'px';
+            }, i * 120);
+          });
+          chartObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    chartObserver.observe(chartVisual);
+
+    // ===== Mock window parallax =====
+    const mockWindow = document.getElementById('mockWindow');
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const rect = mockWindow.getBoundingClientRect();
+          const viewH = window.innerHeight;
+          const progress = Math.max(0, Math.min(1, (viewH - rect.top) / (viewH + rect.height)));
+          const tilt = 2 - progress * 3;
+          mockWindow.style.transform = `rotateX(${tilt}deg)`;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+
+    // ===== Chat Carousel =====
+    const track = document.getElementById('carouselTrack');
+    const dotsContainer = document.getElementById('carouselDots');
+    const prevBtn = document.getElementById('carouselPrev');
+    const nextBtn = document.getElementById('carouselNext');
+    const cards = track.querySelectorAll('.carousel-card');
+
+    function getCardWidth() {
+      const card = cards[0];
+      if (!card) return 400;
+      const gap = parseInt(getComputedStyle(track).gap) || 24;
+      return card.offsetWidth + gap;
+    }
+
+    function getStopCount() {
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      if (maxScroll <= 0) return 1;
+      const cardW = getCardWidth();
+      return Math.round(maxScroll / cardW) + 1;
+    }
+
+    function buildDots() {
+      const count = getStopCount();
+      dotsContainer.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const dot = document.createElement('button');
+        dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+        dot.addEventListener('click', () => {
+          const cardW = getCardWidth();
+          track.scrollTo({ left: i * cardW, behavior: 'smooth' });
+        });
+        dotsContainer.appendChild(dot);
+      }
+    }
+
+    function updateDots() {
+      const dots = dotsContainer.querySelectorAll('.carousel-dot');
+      if (!dots.length) return;
+      const maxScroll = track.scrollWidth - track.clientWidth;
+      const progress = maxScroll > 0 ? track.scrollLeft / maxScroll : 0;
+      const activeIdx = Math.round(progress * (dots.length - 1));
+      dots.forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+    }
+
+    prevBtn.addEventListener('click', () => {
+      track.scrollBy({ left: -getCardWidth(), behavior: 'smooth' });
+    });
+    nextBtn.addEventListener('click', () => {
+      track.scrollBy({ left: getCardWidth(), behavior: 'smooth' });
+    });
+
+    track.addEventListener('scroll', updateDots, { passive: true });
+    buildDots();
+    window.addEventListener('resize', buildDots);
+  </script>
+</body>
+</html>
