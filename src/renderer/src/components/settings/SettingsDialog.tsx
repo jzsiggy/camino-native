@@ -17,6 +17,7 @@ export const SettingsDialog: React.FC = () => {
   const [temperature, setTemperature] = useState(0.3)
   const [hasAnthropicKey, setHasAnthropicKey] = useState(false)
   const [hasOpenaiKey, setHasOpenaiKey] = useState(false)
+  const [activeTab, setActiveTab] = useState('ai')
 
   useEffect(() => {
     if (settingsDialogOpen) {
@@ -58,7 +59,7 @@ export const SettingsDialog: React.FC = () => {
       style={{ width: 550 }}
     >
       <DialogBody>
-        <Tabs>
+        <Tabs selectedTabId={activeTab} onChange={(newTab) => setActiveTab(newTab as string)}>
           <Tab
             id="ai"
             title="AI"
@@ -162,14 +163,16 @@ export const SettingsDialog: React.FC = () => {
           />
         </Tabs>
       </DialogBody>
-      <DialogFooter
-        actions={
-          <>
-            <Button text="Cancel" onClick={() => setSettingsDialogOpen(false)} />
-            <Button text="Save" intent={Intent.PRIMARY} onClick={handleSave} />
-          </>
-        }
-      />
+      {activeTab === 'ai' && (
+        <DialogFooter
+          actions={
+            <>
+              <Button text="Cancel" onClick={() => setSettingsDialogOpen(false)} />
+              <Button text="Save" intent={Intent.PRIMARY} onClick={handleSave} />
+            </>
+          }
+        />
+      )}
     </Dialog>
   )
 }
