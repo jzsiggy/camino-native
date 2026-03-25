@@ -42,7 +42,7 @@ export const useAppStore = create<AppState>((set) => ({
   setSidebarWidth: (width) => set({ sidebarWidth: width }),
 
   activeConnectionId: null,
-  setActiveConnectionId: (id) => set({ activeConnectionId: id }),
+  setActiveConnectionId: (id) => set({ activeConnectionId: id, activeItemType: null, activeScriptId: null }),
 
   connectedIds: new Set(),
   addConnectedId: (id) =>

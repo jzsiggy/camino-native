@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Icon, Menu, MenuItem, showContextMenu } from '@blueprintjs/core'
 import { useConnections, useConnectConnection, useDisconnectConnection, useDeleteConnection } from '../../hooks/useConnections'
 import { useAppStore } from '../../stores/app.store'
+import { useAiStore } from '../../stores/ai.store'
 import { SchemaExplorer } from '../schema/SchemaExplorer'
 import type { ConnectionConfig, DatabaseEngine } from '@shared/types/connection'
 
@@ -106,6 +107,7 @@ export const ConnectionTree: React.FC = () => {
               className={`connection-tree-item ${isActive ? 'active' : ''} ${isConnected ? 'connected' : ''}`}
               onClick={() => {
                 setActiveConnectionId(conn.id)
+                useAiStore.getState().setActiveConversationId(null)
                 if (isConnected) toggleExpanded(conn.id)
                 else handleConnect(conn.id)
               }}
