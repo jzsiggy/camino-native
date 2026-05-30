@@ -9,7 +9,7 @@ import { ResultsChart } from './ResultsChart'
 
 export const ConversationView: React.FC = () => {
   const { activeConnectionId } = useAppStore()
-  const { activeConversationId, streamingContent, isStreaming, isExecutingQuery, pendingUserMessage } = useAiStore()
+  const { activeConversationId, streamingContent, isStreaming, isExecutingQuery, pendingUserMessage, streamError } = useAiStore()
   const { data: messages = [] } = useConversationMessages(activeConversationId)
   const { data: connection } = useConnection(activeConnectionId)
   const { data: conversations = [] } = useConversations(activeConnectionId)
@@ -111,6 +111,11 @@ export const ConversationView: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+        {streamError && (
+          <Callout intent={Intent.DANGER} icon="error" style={{ fontSize: 12 }}>
+            {streamError}
+          </Callout>
         )}
         <div ref={messagesEndRef} />
       </div>

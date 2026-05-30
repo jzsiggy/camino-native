@@ -10,6 +10,9 @@ export interface AiState {
   appendStreamingContent: (chunk: string) => void
   clearStreamingContent: () => void
 
+  streamError: string | null
+  setStreamError: (error: string | null) => void
+
   isStreaming: boolean
   setIsStreaming: (streaming: boolean) => void
 
@@ -28,13 +31,24 @@ export interface AiState {
 
 export const useAiStore = create<AiState>((set) => ({
   activeConversationId: null,
-  setActiveConversationId: (id) => set({ activeConversationId: id }),
+  // Switching conversations must clear transient per-conversation state so a
+  // message left over from a failed/in-flight send doesn't leak into another thread.
+  setActiveConversationId: (id) =>
+    set({
+      activeConversationId: id,
+      pendingUserMessage: null,
+      streamingContent: '',
+      streamError: null
+    }),
 
   streamingContent: '',
   setStreamingContent: (content) => set({ streamingContent: content }),
   appendStreamingContent: (chunk) =>
     set((state) => ({ streamingContent: state.streamingContent + chunk })),
   clearStreamingContent: () => set({ streamingContent: '' }),
+
+  streamError: null,
+  setStreamError: (error) => set({ streamError: error }),
 
   isStreaming: false,
   setIsStreaming: (streaming) => set({ isStreaming: streaming }),

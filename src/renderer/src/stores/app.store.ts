@@ -10,6 +10,10 @@ export interface AppState {
   activeConnectionId: string | null
   setActiveConnectionId: (id: string | null) => void
 
+  // Right panel (results vs AI chat)
+  rightPanel: 'results' | 'ai'
+  setRightPanel: (panel: 'results' | 'ai') => void
+
   // Connected connections
   connectedIds: Set<string>
   addConnectedId: (id: string) => void
@@ -43,6 +47,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   activeConnectionId: null,
   setActiveConnectionId: (id) => set({ activeConnectionId: id, activeItemType: null, activeScriptId: null }),
+
+  rightPanel: 'results',
+  setRightPanel: (panel) => set({ rightPanel: panel }),
 
   connectedIds: new Set(),
   addConnectedId: (id) =>

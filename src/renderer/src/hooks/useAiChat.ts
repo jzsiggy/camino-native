@@ -49,11 +49,12 @@ export function useDeleteConversation() {
 
 export function useSendMessage() {
   const queryClient = useQueryClient()
-  const { setIsStreaming, appendStreamingContent, clearStreamingContent, setPendingUserMessage } = useAiStore()
+  const { setIsStreaming, clearStreamingContent, setPendingUserMessage, setStreamError } = useAiStore()
 
   return useMutation({
     mutationFn: async ({ conversationId, message }: { conversationId: string; message: string }) => {
       clearStreamingContent()
+      setStreamError(null)
       setPendingUserMessage(message)
       setIsStreaming(true)
       try {
@@ -64,15 +65,24 @@ export function useSendMessage() {
       }
     },
     onSuccess: (_data, vars) => {
-      setPendingUserMessage(null)
       queryClient.invalidateQueries({ queryKey: ['messages', vars.conversationId] })
+    },
+    onError: (err) => {
+      // The IPC handler rejects with the underlying failure (e.g. missing API key);
+      // surface it instead of failing silently.
+      setStreamError(err instanceof Error ? err.message : String(err))
+    },
+    // Runs on both success and error so a failed send never leaves the user's
+    // message stuck in the global store (which leaked into other conversations).
+    onSettled: () => {
+      setPendingUserMessage(null)
       clearStreamingContent()
     }
   })
 }
 
 export function useAiStream() {
-  const { appendStreamingContent, setIsStreaming, clearStreamingContent, setIsExecutingQuery } = useAiStore()
+  const { appendStreamingContent, setIsStreaming, clearStreamingContent, setIsExecutingQuery, setStreamError } = useAiStore()
 
   useEffect(() => {
     const unsubStream = aiApi.onStream((chunk: unknown) => {
@@ -90,10 +100,14 @@ export function useAiStream() {
       setIsExecutingQuery(false)
     })
 
-    const unsubError = aiApi.onStreamError(() => {
+    const unsubError = aiApi.onStreamError((chunk: unknown) => {
+      const data = chunk as AiStreamChunk
       setIsStreaming(false)
       setIsExecutingQuery(false)
       clearStreamingContent()
+      // Surface the backend error (e.g. "Anthropic API key not configured")
+      // instead of swallowing it and showing nothing.
+      setStreamError(data?.content || 'The AI request failed.')
     })
 
     return () => {
@@ -101,7 +115,7 @@ export function useAiStream() {
       unsubEnd()
       unsubError()
     }
-  }, [appendStreamingContent, setIsStreaming, clearStreamingContent, setIsExecutingQuery])
+  }, [appendStreamingContent, setIsStreaming, clearStreamingContent, setIsExecutingQuery, setStreamError])
 }
 
 export function useAiContext(connectionId: string | null) {

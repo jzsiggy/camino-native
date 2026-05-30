@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Button, Intent, Icon, Spinner } from '@blueprintjs/core'
+import { Button, Callout, Intent, Icon, Spinner } from '@blueprintjs/core'
 import { useAppStore } from '../../stores/app.store'
 import { useAiStore } from '../../stores/ai.store'
 import { useConversations, useConversationMessages, useCreateConversation, useSendMessage, useAiStream, useWizardStatus } from '../../hooks/useAiChat'
@@ -10,7 +10,7 @@ import type { ChatMessage } from '@shared/types/ai'
 
 export const AiChatPanel: React.FC = () => {
   const { activeConnectionId, setRightPanel } = useAppStore()
-  const { activeConversationId, setActiveConversationId, streamingContent, isStreaming, isExecutingQuery, pendingUserMessage, setWizardOpen } = useAiStore()
+  const { activeConversationId, setActiveConversationId, streamingContent, isStreaming, isExecutingQuery, pendingUserMessage, streamError, setWizardOpen } = useAiStore()
   const { data: wizardStatus } = useWizardStatus(activeConnectionId)
   const { data: conversations = [] } = useConversations(activeConnectionId)
   const { data: messages = [] } = useConversationMessages(activeConversationId)
@@ -127,6 +127,11 @@ export const AiChatPanel: React.FC = () => {
                   </div>
                 )}
               </div>
+            )}
+            {streamError && (
+              <Callout intent={Intent.DANGER} icon="error" style={{ fontSize: 12 }}>
+                {streamError}
+              </Callout>
             )}
             <div ref={messagesEndRef} />
           </div>
